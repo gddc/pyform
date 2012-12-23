@@ -5,17 +5,17 @@ from collections import OrderedDict
 
 
 import wx
-from Controls import CheckBox, RadioButton, StaticText
+from Controls import CheckBox, RadioButton, StaticText, Row
 
 
 class FormDialog(wx.Dialog):
   def __init__(self, parent, panel = None, title = "Unnamed Dialog",
-               modal = False, sizes = (-1, -1), offset = None):
+               modal = False, sizes = (-1, -1), offset = None, gap = 3):
     wx.Dialog.__init__(self, parent, -1, title,
                        style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
     if panel is not None:
-      self.panel = panel(self)
+      self.panel = panel(self, gap = gap)
       self.SetTitle(self.panel.form.get('Title', title))
       self.panel.SetSizeHints(*sizes)
 
@@ -58,7 +58,7 @@ class FormDialog(wx.Dialog):
     self.Destroy()
 
 class Form(wx.Panel):
-  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1)): #@ReservedAssignment
+  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args): #@ReservedAssignment
     wx.Panel.__init__(self, parent, id)
 
     self.SetSizeHints(*sizes)
@@ -96,6 +96,12 @@ class Form(wx.Panel):
     return value
 
   def Bind(self, evtType, evtFunc, evtSrc, call = False, *args, **kwargs):
+    """
+      I rewrote Bind a little bit to simplify binding events using the names
+      that you assign to individual elements.  The call signature is the
+      same, and it only triggers when you pass the *wrong* type argument
+      as the event source, so it shouldn't affect existing Bind calls.
+    """
     if isinstance(evtSrc, (str, unicode)):
       self.elements[evtSrc].ParentBind(self, evtType, evtFunc, *args, **kwargs)
     else:
@@ -119,14 +125,21 @@ class Form(wx.Panel):
     pass
 
   def parseContainer(self, container, outerSizer, pos = None, span = None):
+    sectionSizer = wx.BoxSizer(wx.VERTICAL)
     for section in container.iteritems():
       region, proportion = self.parseSection(section)
-      if isinstance(outerSizer, wx.GridBagSizer):
-        outerSizer.Add(region, pos, span, border = self.gap,
-                  flag = wx.ALIGN_CENTER_VERTICAL)
-      else:
-        outerSizer.Add(region, proportion, flag = wx.EXPAND | wx.ALL,
+      sectionSizer.Add(region, proportion, flag = wx.EXPAND | wx.ALL,
                        border = self.gap)
+    if isinstance(outerSizer, wx.GridBagSizer):
+      outerSizer.Add(sectionSizer, pos, span, border = self.gap,
+                     flag = wx.ALIGN_CENTER_VERTICAL)
+      if proportion:
+        row, col = pos
+        outerSizer.AddGrowableRow(row)
+        outerSizer.AddGrowableCol(col)
+    else:
+      outerSizer.Add(sectionSizer, 1, flag = wx.EXPAND | wx.ALL,
+                     border = self.gap)
 
 
   def parseSection(self, section):
@@ -136,13 +149,11 @@ class Form(wx.Panel):
     sizerProportion = 1 if 'G' in flags else 0
     if 'NC' in flags:
       sectionSizer = wx.BoxSizer(wx.VERTICAL)
-      for block in blocks:
-        self.parseBlock(block, sectionSizer)
     else:
       box = wx.StaticBox(self, -1, display)
       sectionSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-      for block in blocks:
-        self.parseBlock(block, sectionSizer)
+    for block in blocks:
+      self.parseBlock(block, sectionSizer)
     return sectionSizer, sizerProportion
 
 
@@ -158,7 +169,8 @@ class Form(wx.Panel):
       return self.parseContainer(block, sectionSizer)
     if isinstance(block, list):
       item = self.makeGrid(block)
-    elif isinstance(block, tuple):
+    elif isinstance(block, (tuple, Row)):
+      proportion = getattr(block, 'proportion', proportion)
       item = self.makeRow(block)
     else:
       proportion = block.proportion
@@ -204,18 +216,12 @@ class Form(wx.Panel):
         # Each item may specify that its row or column 'grow' or expand to fill
         # the available space in the form. Spans or specific positions are also
         # possible.
-        if isinstance(field, dict):
-          flags = field.pop('flags', wx.ALL)
-          rowGrowable = field.pop('rowGrowable', False)
-          colGrowable = field.pop('colGrowable', False)
-          span = field.pop('span', (1, 1))
-          pos = field.pop('rowpos', row), field.pop('colpos', col)
-        else:
-          flags = field.flags
-          rowGrowable = field.rowGrowable
-          colGrowable = field.colGrowable
-          span = field.span
-          pos = field.rowpos or row, field.colpos or col
+        flags = getattr(field, 'flags', wx.ALL)
+        rowGrowable = getattr(field, 'rowGrowable', False)
+        colGrowable = getattr(field, 'colGrowable', True)
+        span = getattr(field, 'span', (1, 1))
+        pos = (getattr(field, 'rowpos', row) or row,
+               getattr(field, 'colpos', col) or col)
 
         if rowGrowable:
           sizer.AddGrowableRow(row)
@@ -234,8 +240,8 @@ class Form(wx.Panel):
     """
       This function actually creates the widgets that make up the form.
       Each element should provide a `make` method which takes as an argument
-      it's parent, and returns a WX item (sizer, form element, etc).
-      Other methods of not for each widget (defined with placeholders on
+      it's parent, and returns a wx item (sizer, form element, etc).
+      Other methods for each widget (defined with placeholders on
       the wxPlaceholder Class) are
         GetValue
         SetValue
@@ -288,7 +294,8 @@ class Form(wx.Panel):
 
 if __name__ == "__main__":
   from Demos import DemoForm, DemoFormGrowable, DemoNested, DemoNestedHorizontal, \
-      ComplicatedDemo
+      ComplicatedDemo, ComprehensiveDemo, AlternateDeclaration, GridDemos, \
+      DemoLeftStacked
 
   app = wx.PySimpleApp()
   f = wx.Frame(None)
@@ -298,5 +305,9 @@ if __name__ == "__main__":
   FormDialog(parent = f, panel = DemoNested)
   FormDialog(parent = f, panel = DemoNestedHorizontal)
   FormDialog(parent = f, panel = ComplicatedDemo)
+  FormDialog(parent = f, panel = ComprehensiveDemo)
+  FormDialog(parent = f, panel = AlternateDeclaration)
+  FormDialog(parent = f, panel = GridDemos)
+  FormDialog(parent = f, panel = DemoLeftStacked, gap = 1)
 
   app.MainLoop()

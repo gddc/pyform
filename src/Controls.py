@@ -14,6 +14,7 @@ from wx.lib.masked.ipaddrctrl import IpAddrCtrl as _IpAddrCtrl
 from infinity77libs.CustomTreeCtrl import CustomTreeCtrl as _CustomTreeCtrl
 from win32wnet import WNetGetUniversalName
 import wx
+from util.FlowSizer import FlowSizer
 
 class _CustomFontCtrl(wx.Button):
   """
@@ -48,10 +49,37 @@ class _CustomFontCtrl(wx.Button):
     return self.font
 
   def SetFontFromDesc(self, desc):
-    self.font.SetNativeFontInfoFromString('0;' + desc)
+    self.font.SetNativeFontInfoFromString(desc)
     self.SetLabel(', '.join(map(unicode, (self.font.GetFaceName(), self.font.GetPointSize()))))
     self.SetFont(self.font)
 
+
+class Row(object):
+  """
+    The Row Class is provided as a utility class.  It allows you to
+    provide additional keyword arguments that become attributes to
+    pass to the containing Sizer. It is supplementary to the use of
+    tuples in the main Form Structure.
+  """
+
+  def __init__(self, items, **kwargs):
+    if not isinstance(items, tuple):
+      raise TypeError("Expected a tuple for argument 'items'.")
+    self.items = items
+    self.name = kwargs.pop('name', None)
+    self.proportion = kwargs.pop('proportion', 0)
+    self.flags = kwargs.pop('flags', wx.ALL)
+    self.rowGrowable = kwargs.pop('rowGrowable', False)
+    self.colGrowable = kwargs.pop('colGrowable', False)
+    self.span = kwargs.pop('span', (1, 1))
+    self.size = kwargs.get('size', (-1, -1))
+    self.rowpos = kwargs.pop('rowpos', None)
+    self.colpos = kwargs.pop('colpos', None)
+    self.expand = kwargs.pop('expand', True)
+    self.kwargs = kwargs
+
+  def __iter__(self):
+    return iter(self.items)
 
 class wxPlaceHolder(object):
   def __init__(self, **kwargs):
@@ -123,7 +151,7 @@ class FontPicker(wxPlaceHolder):
     return self.element
 
   def GetValue(self):
-    return self.element.GetSelectedFont()
+    return self.element.GetSelectedFont().GetNativeFontInfoDesc()
 
   def SetValue(self, val):
     self.element.SetFontFromDesc(val)
@@ -138,7 +166,6 @@ class StaticText(wxPlaceHolder):
     size = self.kwargs.pop('fontsize', None)
     self.element = wx.StaticText(parent, **self.kwargs)
     font = self.element.GetFont()
-
     if size is not None:
       font.SetPointSize(size)
     if bold:
@@ -152,6 +179,31 @@ class StaticText(wxPlaceHolder):
 
   def GetValue(self):
     return self.element.GetLabel()
+
+class TextFlow(wxPlaceHolder):
+  def make(self, parent):
+    bold = self.kwargs.pop('bold', False)
+    size = self.kwargs.pop('fontsize', None)
+    self.element = FlowSizer()
+    self.words = []
+    for word in self.kwargs['label'].split():
+      text = wx.StaticText(parent, label = word)
+      if size or bold:
+        font = text.GetFont()
+        if size is not None:
+          font.SetPointSize(size)
+        if bold:
+          font.SetWeight(wx.BOLD)
+        text.SetFont(font)
+      self.words.append(text)
+      self.element.Add(text, flag = wx.TOP | wx.RIGHT, border = 2)
+    return self.element
+
+  def SetValue(self, val):
+    pass
+
+  def GetValue(self):
+    return ' '.join(word.GetLabel() for word in self.words)
 
 
 class CheckBox(wxPlaceHolder):
@@ -177,6 +229,10 @@ class TextCtrl(wxPlaceHolder):
     return self.element.WriteText(text)
 
 class PassCtrl(TextCtrl):
+  def make(self, parent):
+    self.kwargs['style'] = wx.TE_PASSWORD
+    return super(PassCtrl, self).make(parent)
+
   def SetValue(self, val):
     self.element.SetValue(val)
 
@@ -239,8 +295,6 @@ class FolderBrowser(wxPlaceHolder):
   def Validate(self):
     return self.validator().Validate(self.element)
 
-#          (TextCtrl(name = 'device', style = wx.TE_READONLY, proportion = 1),
-#           Button(label = 'Browse ...', name = 'Browse'))
 
 
 class TreeCtrl(wxPlaceHolder):
