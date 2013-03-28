@@ -4,9 +4,10 @@ Created on Dec 16, 2012
 @author: daniel
 '''
 
-from Form import Form
+from Form import Form, FormDialog
 from collections import OrderedDict
 from Controls import *
+from wx._core import CallAfter
 
 
 class DemoForm(Form):
@@ -15,18 +16,30 @@ class DemoForm(Form):
       'Title': "Demo Form 1",
       'Parts':  OrderedDict([
         ('Test Section', [
-          StaticText(label = "This is the first attempt at a demo.")
+          StaticText(label = "This is the first form in our demo."),
+          StaticText(label = "It is not terribly complicated."),
+          StaticText(label = "Down here is a button that will let us proceed."),
+          Button(label = "Click Me To Proceed", name = "Continue", proportion = 0)
         ])
       ])
     }
     Form.__init__(self, parent, **kwargs)
+
+  def bind(self):
+    self.Bind(wx.EVT_BUTTON, self.onContinue, 'Continue')
+    Form.bind(self)
+
+  def onContinue(self, evt = None):
+    FormDialog(self.Parent,
+               panel = DemoFormGrowable,
+               offset = 25)
 
 class DemoFormGrowable(Form):
   def __init__(self, parent, **kwargs):
     self.form = {
       'Title': "Demo with Growable Regions",
       'Parts':  OrderedDict([
-        ('G-Test Growable Form', [
+        (('Growable Form', Form.G), [
           StaticText(label = "This Box Sizer will use up available space.")
         ])
       ])
@@ -38,14 +51,14 @@ class DemoNested(Form):
     self.form = {
       'Title': "Nexted Containers",
       'Parts':  OrderedDict([
-        ('G-Test Nested Growables', [
+        (('Test Nested Growables', Form.G), [
           OrderedDict([
-            ('G-Inner Growable', [
+            (('Inner Growable', Form.G), [
               StaticText(label = 'This Test is a bit less likely to work.')
             ])
           ]),
           OrderedDict([
-            ('G-Inner Growable 2', [
+            (('Inner Growable 2', Form.G), [
               StaticText(label = 'This Test is a bit less likely to work.')
             ])
           ])
@@ -59,14 +72,14 @@ class DemoNestedHorizontal(Form):
     self.form = {
       'Title': 'Horizontally Nested',
       'Parts':  OrderedDict([
-        ('G-Test Nested Growables', [
+        (('Test Nested Growables', Form.G), [
           (OrderedDict([
-             ('G-Inner Growable', [
+             (('Inner Growable', Form.G), [
                StaticText(label = 'This Test is a bit less likely to work.')
              ])
            ]),
            OrderedDict([
-             ('G-Inner Growable 2', [
+             (('Inner Growable 2', Form.G), [
                StaticText(label = 'This Test is a bit less likely to work.')
              ])
            ]))
@@ -81,21 +94,21 @@ class ComplicatedDemo(Form):
     self.form = {
       'Title': 'Getting More Complicated',
       'Parts':  OrderedDict([
-        ('G-Test Nested Growables', [
+        (('Test Nested Growables', Form.G), [
           (OrderedDict([
-             ('G-Inner Growable', [
+             (('Inner Growable', Form.G), [
                StaticText(label = 'This Test is a bit less likely to work.')
              ])
            ]),
            OrderedDict([
-             ('G-Inner Growable 2', [
+             (('Inner Growable 2', Form.G), [
                StaticText(label = 'This Test is a bit less likely to work.')
              ])
            ])),
           [(StaticText(label = "Inner 1"),
             StaticText(label = "Inner 2"),
             OrderedDict([
-              ('G-Inner Growable 2', [
+              (('Inner Growable 2', Form.G), [
                 StaticText(label = 'This Test is a bit less likely to work.'),
                 (CheckBox(name = 'Check1', label = "A few samples."),
                  StaticText(label = "Like This."))
@@ -124,7 +137,7 @@ class ComprehensiveDemo(Form):
           (StaticText(label = "Passwords can be accomodated."),
            PassCtrl(name = "Pass1")),
           Button(name = 'Button1', label = "This is just a button."),
-          TreeCtrl(name = 'Tree1'), #todo tree needs populated.
+          TreeCtrl(name = 'Tree1', proportion = 1), #todo tree needs populated.
           # Grids take place here.
           [(ComboBox(name = 'Combo1', choices = ['1', '2', '3']),
             FloatSpin(name = 'FloatSpin1', min_val = 0, max_val = 30, digits = 2,
@@ -136,7 +149,7 @@ class ComprehensiveDemo(Form):
             RadioButton(name = "R3", label = "Or", style = wx.RB_GROUP),
             RadioButton(name = "R4", label = "Disconnected"))]
         ]),
-        ('G-Another Container - With Nesting (Take Care).', [
+        (('Another Container - With Nesting (Take Care).', Form.G), [
           # Are you paying close attention here?  We're nesting OrderedDict's
           # in tuple's to get side-by-side BoxSizers
           (OrderedDict([
@@ -158,9 +171,9 @@ class ComprehensiveDemo(Form):
            ])),
           # Which we're going to place above another container.
           OrderedDict([
-            ('G-This is getting kind of deeply nested.', [
+            (('This is getting kind of deeply nested.', Form.G), [
               OrderedDict([
-                ("G-But we're showing just how intricate", [
+                (("But we're showing just how intricate", Form.G), [
                   StaticText(label = "your forms can be.")
                 ])
               ])
@@ -181,7 +194,7 @@ class ComprehensiveDemo(Form):
 
 class AlternateDeclaration(Form):
   """
-    This example provdies a different way to declare forms, in case the
+    This example provides a different way to declare forms, in case the
     nesting from the previous example was a bit overwhelming.
   """
   def __init__(self, parent, **kwargs):
@@ -193,11 +206,11 @@ class AlternateDeclaration(Form):
     parts['Outermost'] = outer = list()
     outer.append(CheckBox(name = 'Check1', label = "Just a checkbox."))
     outer.append(StaticText(label = "And some text."))
-    outer.append((StaticText(label = "These should form"),
-                  StaticText(label = "a row.")))
+    outer.append((StaticText(label = "These should form ", gap = 0),
+                  StaticText(label = "a row.", gap = 0)))
     inner = OrderedDict([])
     inner['Sub 1'] = sub1 = list()
-    sub1.append(ComboBox(name = 'Combo'))
+    sub1.append(ComboBox(name = 'Combo', proportion = 1))
     defaults['Combo'] = 'Default Value'
     options['Combo'] = map(str, range(10))
     outer.append(inner)
@@ -208,7 +221,7 @@ class GridDemos(Form):
   def __init__(self, parent, **kwargs):
     self.form = {}
     self.form['Title'] = "Nested Grids"
-    parts = self.form['Parts'] = OrderedDict([])
+    parts = self.form['Parts'] = OrderedDict()
     for row in range(10):
       row_list = parts['Row %d' % row] = list()
       cols = list()
@@ -225,17 +238,27 @@ class DemoLeftStacked(Form):
   def __init__(self, parent, **kwargs):
     self.form = {'Title': 'Left Stacked Demo'}
     parts = self.form['Parts'] = OrderedDict()
-    outermost = parts['G-Outermost'] = list()
+    outermost = parts[('Outermost', Form.G)] = list()
     left, right = OrderedDict(), OrderedDict()
     outermost.append(Row((left, right), rowGrowable = True, proportion = 1))
-    l1 = left['G-Left Top'] = list()
+    l1 = left[('Left Top', Form.G)] = list()
     l1.append(StaticText(label = 'Left Top Inner'))
-    l2 = left['G-Left Bottom'] = list()
+    l2 = left[('Left Bottom', Form.G)] = list()
     l2.append(StaticText(label = 'Left Bottom Inner'))
-    r1 = right['G-Right'] = list()
+    r1 = right[('Right', Form.G)] = list()
     r1.append(TextCtrl(name = 'Text', style = wx.TE_MULTILINE,
                        colGrowable = True, rowGrowable = True, proportion = 1))
-
-
     super(DemoLeftStacked, self).__init__(parent, **kwargs)
+
+
+class NonDialog(Form):
+  def __init__(self, parent, **kwargs):
+    self.form = {}
+    parts = self.form['Parts'] = OrderedDict()
+    main = parts[('Main', Form.G | Form.NC)] = list()
+    main.append(StaticText(label = "This is where you would create your app."))
+    inner = OrderedDict()
+    main.append(inner)
+    inner[('Sub Region 1', Form.G)] = list()
+    super(NonDialog, self).__init__(parent, **kwargs)
 

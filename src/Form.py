@@ -1,16 +1,19 @@
   #!/usr/bin/env pythoninter
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 
 import wx
 from Controls import CheckBox, RadioButton, StaticText, Row
+from wx._core import EVT_MENU
+from traceback import print_exc
 
 
 class FormDialog(wx.Dialog):
   def __init__(self, parent, panel = None, title = "Unnamed Dialog",
-               modal = False, sizes = (-1, -1), offset = None, gap = 3):
+               modal = False, sizes = (-1, -1), offset = None, gap = 3,
+               position = None):
     wx.Dialog.__init__(self, parent, -1, title,
                        style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
@@ -30,7 +33,10 @@ class FormDialog(wx.Dialog):
       ds.AddGrowableRow(0)
 
       self.SetSizerAndFit(ds)
-      self.Center()
+      if position is None:
+        self.Center()
+      else:
+        self.SetPosition(position)
 
       if offset:
         newpos = map(lambda x: x + offset, self.GetPositionTuple())
@@ -58,12 +64,19 @@ class FormDialog(wx.Dialog):
     self.Destroy()
 
 class Form(wx.Panel):
+  # Flags for containers.
+  D = DEFAULT_FLAGS = 0
+  G = GROWABLE = 1
+  NC = NO_CONTAINER = 2
+  R = RIGHT_ALIGN = 4
+
   def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args): #@ReservedAssignment
     wx.Panel.__init__(self, parent, id)
 
     self.SetSizeHints(*sizes)
     self.gap = gap
     self.elements = OrderedDict([])
+    self.ATables = defaultdict(list)
 
     if hasattr(self, 'form'):
       # Before building verify that several required sections exist in the form
@@ -83,17 +96,25 @@ class Form(wx.Panel):
       self.build()
       self.bind()
 
+  def __getitem__(self, key):
+    try:
+      return self.elements[key].GetValue()
+    except:
+      print_exc()
+
   def HumanToMachine(self, name, value = ''):
     if 'Translations' in self.form:
       if name in self.form['Translations']:
         value = self.form['Translations'][name][1].get(value, value)
     return value
+  h2m = HumanToMachine
 
   def MachineToHuman(self, name, value = ''):
     if 'Translations' in self.form:
       if name in self.form['Translations']:
         value = self.form['Translations'][name][0].get(value, value)
     return value
+  m2h = MachineToHuman
 
   def Bind(self, evtType, evtFunc, evtSrc, call = False, *args, **kwargs):
     """
@@ -102,12 +123,23 @@ class Form(wx.Panel):
       same, and it only triggers when you pass the *wrong* type argument
       as the event source, so it shouldn't affect existing Bind calls.
     """
-    if isinstance(evtSrc, (str, unicode)):
-      self.elements[evtSrc].ParentBind(self, evtType, evtFunc, *args, **kwargs)
-    else:
-      super(Form, self).Bind(evtType, evtFunc, evtSrc, *args, **kwargs)
+    if isinstance(evtSrc, basestring):
+      evtSrc = self.elements[evtSrc]
+#    if isinstance(evtType, wx.CommandEvent):
+    evtSrc.Bind(evtType, evtFunc)
+#    else:
+#      super(Form, self).Bind(evtType, evtFunc, evtSrc, *args, **kwargs)
     if call:
       evtFunc()
+
+  def Accel(self, key, func, elem, kind = wx.ACCEL_NORMAL):
+    """
+      This convenience function is provided to simplify Accelerator Table
+      creation.  It builds Accelerator Tables over repeated calls for
+      the windows indicated by `elem`. The tables will be set in the
+      bind method (the default behavior).
+    """
+    self.ATables[elem].append((kind, key, func))
 
   def build(self):
     """
@@ -122,7 +154,13 @@ class Form(wx.Panel):
     self.SetSizerAndFit(panelSizer)
 
   def bind(self):
-    pass
+    for name, table in self.ATables.items():
+      if table:
+        at = []
+        for kind, key, func in table:
+          at.append((kind, key, key))
+          EVT_MENU(self.elements[name], key, func)
+        self.elements[name].SetAcceleratorTable(wx.AcceleratorTable(at))
 
   def parseContainer(self, container, outerSizer, pos = None, span = None):
     sectionSizer = wx.BoxSizer(wx.VERTICAL)
@@ -144,10 +182,15 @@ class Form(wx.Panel):
 
   def parseSection(self, section):
     container, blocks = section
-    flags, _sep, display = container.rpartition('-')
+    try:
+      display, flags = container
+    except ValueError:
+      # String instead of tuple.
+      flags = Form.D
+      display = container
 
-    sizerProportion = 1 if 'G' in flags else 0
-    if 'NC' in flags:
+    sizerProportion = 1 if flags & Form.G == Form.G else 0
+    if flags & Form.NC == Form.NC:
       sectionSizer = wx.BoxSizer(wx.VERTICAL)
     else:
       box = wx.StaticBox(self, -1, display)
@@ -177,16 +220,13 @@ class Form(wx.Panel):
       item = self.makeElement(block)
     sectionSizer.Add(item, proportion, flag = wx.EXPAND | wx.ALL, border = self.gap)
 
-  def makeElement(self, object): #@ReservedAssignment
-    """
-      In the form structure a dictionary signifies a single element.  A single
-      element is automatically assumed to expand to fill available horizontal
-      space in the form.
-    """
+  def makeElement(self, declarator): #@ReservedAssignment
     sizer = wx.BoxSizer(wx.HORIZONTAL)
-    flags = object.flags
-    element = self.makeWidget(object)
-    sizer.Add(element, 1, border = self.gap,
+    flags = declarator.flags
+    element = self.makeWidget(declarator)
+    sizer.Add(element,
+              declarator.proportion,
+              border = self.gap if declarator.gap is None else declarator.gap,
               flag = wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | flags)
     return sizer
 
@@ -249,16 +289,20 @@ class Form(wx.Panel):
         SetOptions
     """
 
+    # Attach the elements container to the declarator.
+    declarator._elements = self.elements
     element = declarator.make(self)
     if declarator.name:
       self.elements[declarator.name] = declarator
+      # Disable if requested.
+      if declarator.name in self.form['Disabled']:
+        declarator.Enable(False)
       # Options need to exist early.
-      declarator.SetOptions(self.form['Options'].get(declarator.name, []))
-
+      if hasattr(declarator, 'SetOptions'):
+        declarator.SetOptions(self.form['Options'].get(declarator.name, []))
       # We need to use the existing value if there isn't one in defaults
       # to prevent StaticText's from ending up blank.
       value = self.form['Defaults'].get(declarator.name, declarator.GetValue())
-
       # Assign or populate any fields requiring it.
       declarator.SetValue(self.MachineToHuman(declarator.name, value))
       declarator.SetValidator(self.form['Validators'].get(declarator.name, None))
@@ -274,7 +318,8 @@ class Form(wx.Panel):
     self.onClose(evt)
 
   def onClose(self, evt):
-    self.GetParent().FocusNext()
+    if isinstance(self.Parent, FormDialog):
+      self.Parent.FocusNext()
 
   def fieldValidate(self):
     if not self.form.has_key('Validators'):
@@ -295,10 +340,11 @@ class Form(wx.Panel):
 if __name__ == "__main__":
   from Demos import DemoForm, DemoFormGrowable, DemoNested, DemoNestedHorizontal, \
       ComplicatedDemo, ComprehensiveDemo, AlternateDeclaration, GridDemos, \
-      DemoLeftStacked
+      DemoLeftStacked, NonDialog
 
   app = wx.PySimpleApp()
   f = wx.Frame(None)
+  NonDialog(f)
   f.Show()
   FormDialog(parent = f, panel = DemoForm)
   FormDialog(parent = f, panel = DemoFormGrowable)

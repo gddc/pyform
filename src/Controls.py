@@ -7,6 +7,7 @@ This module contains custom classes to provide functionality from
 the wx module in specific ways.
 '''
 
+from wx.aui import AuiNotebook
 from wx.py.crust import Shell
 from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
 from wx.lib.agw.floatspin import FloatSpin as _FloatSpin
@@ -15,6 +16,8 @@ from infinity77libs.CustomTreeCtrl import CustomTreeCtrl as _CustomTreeCtrl
 from win32wnet import WNetGetUniversalName
 import wx
 from util.FlowSizer import FlowSizer
+from collections import OrderedDict
+from wx.combo import ComboCtrl as _ComboCtrl
 
 class _CustomFontCtrl(wx.Button):
   """
@@ -81,8 +84,12 @@ class Row(object):
   def __iter__(self):
     return iter(self.items)
 
+
 class wxPlaceHolder(object):
   def __init__(self, **kwargs):
+    # To facilitate advanced forms, declarators will end up with access
+    # to the Form's element list.
+    self._elements = None
     # Pull anything that doesn't belong to the actual element out of the 
     # kwargs for use when adding to the sizer, etc.
     self.name = kwargs.get('name', None)
@@ -97,38 +104,54 @@ class wxPlaceHolder(object):
     self.expand = kwargs.pop('expand', True)
     self.local = kwargs.pop('local', False)
     self.admin = kwargs.pop('admin', False)
+    self.gap = kwargs.pop('gap', None)
     self.maxlength = kwargs.pop('maxlength', None)
     self.kwargs = kwargs
 
-  def GetId(self):
-    return self.element.GetId()
+#  def GetId(self):
+#    return self.element.GetId()
 
-  def Enable(self, state):
-    self.element.Enable(state)
+#  def GetPosition(self):
+#    return self.element.GetPosition()
 
-  def GetInsertionPoint(self):
-    return self.element.GetInsertionPoint()
+#  def GetScreenPosition(self):
+#    return self.element.GetScreenPosition()
 
-  def SetInsertionPoint(self, idx):
-    return self.element.SetInsertionPoint(idx)
+#  def Enable(self, state):
+#    self.element.Enable(state)
 
-  def GetSelection(self):
-    return self.element.GetSelection()
+#  def GetInsertionPoint(self):
+#    return self.element.GetInsertionPoint()
 
-  def SetOptions(self, options):
-    pass
+#  def SetInsertionPoint(self, idx):
+#    return self.element.SetInsertionPoint(idx)
 
-  def SetFocus(self):
-    return self.element.SetFocus()
+#  def ProcessEvent(self, evt):
+#    return self.element.ProcessEvent(evt)
 
-  def SetValue(self, val):
-    return self.element.SetValue(val)
+#  def SetBackgroundColor(self, color):
+#    return self.element.SetBackgroundColour(color)
 
-  def GetValue(self):
-    return self.element.GetValue()
+#  def SetBackgroundColour(self, color):
+#    return self.element.SetBackgroundColour(color)
 
-  def ParentBind(self, parent, evtType, evtFunc, *args, **kwargs):
-    return wx.Panel.Bind(parent, evtType, evtFunc, self.element, *args, **kwargs)
+#  def GetSelection(self):
+#    return self.element.GetSelection()
+
+#  def SetOptions(self, options):
+#    pass
+
+#  def SetFocus(self):
+#    return self.element.SetFocus()
+
+#  def SetValue(self, val):
+#    return self.element.SetValue(val)
+
+#  def GetValue(self):
+#    return self.element.GetValue()
+
+#  def ParentBind(self, parent, evtType, evtFunc, *args, **kwargs):
+#    return wx.Panel.Bind(parent, evtType, evtFunc, self, *args, **kwargs)
 
   def Validate(self):
     if hasattr(self, 'validator'):
@@ -160,25 +183,70 @@ class FontPicker(wxPlaceHolder):
     return self.element.GetSelectedFont()
 
 
-class StaticText(wxPlaceHolder):
+class StaticText(wxPlaceHolder, wx.StaticText):
   def make(self, parent): #@ReservedAssignment
     bold = self.kwargs.pop('bold', False)
     size = self.kwargs.pop('fontsize', None)
-    self.element = wx.StaticText(parent, **self.kwargs)
-    font = self.element.GetFont()
+    wx.StaticText.__init__(self, parent, **self.kwargs)
+    font = self.GetFont()
     if size is not None:
       font.SetPointSize(size)
     if bold:
       font.SetWeight(wx.BOLD)
-    self.element.SetFont(font)
+    self.SetFont(font)
 
-    return self.element
+    return self
 
   def SetValue(self, val):
-    self.element.SetLabel(val)
+    self.SetLabel(val)
 
   def GetValue(self):
-    return self.element.GetLabel()
+    return self.GetLabel()
+
+  def SetBackgroundColor(self, *args, **kwargs):
+    return self.SetBackgroundColour(*args, **kwargs)
+
+
+class ListCtrl(wxPlaceHolder, wx.ListCtrl):
+  def __init__(self, *args, **kwargs):
+    self._selected = None
+    return wxPlaceHolder.__init__(self, *args, **kwargs)
+
+  def make(self, parent):
+    wx.ListCtrl.__init__(self, parent, **self.kwargs)
+    return self
+
+  def Select(self, idx):
+    self._selected = idx
+    return super(ListCtrl, self).Select(idx)
+
+  def GetSelection(self):
+    return self._selected
+
+  def GetTextSelection(self):
+    return self.GetItemText(self._selected)
+
+  def GetValue(self):
+    pass
+
+  def SetValue(self, val):
+    pass
+
+
+class CheckListBox(wxPlaceHolder, wx.CheckListBox):
+  def __init__(self, *args, **kwargs):
+    return wxPlaceHolder.__init__(self, *args, **kwargs)
+
+  def make(self, parent):
+    wx.CheckListBox.__init__(self, parent, **self.kwargs)
+    return self
+
+  def GetValue(self):
+    pass
+
+  def SetValue(self, val):
+    pass
+
 
 class TextFlow(wxPlaceHolder):
   def make(self, parent):
@@ -206,27 +274,52 @@ class TextFlow(wxPlaceHolder):
     return ' '.join(word.GetLabel() for word in self.words)
 
 
-class CheckBox(wxPlaceHolder):
-  def make(self, parent): #@ReservedAssignment
-    self.element = wx.CheckBox(parent, **self.kwargs)
+class Notebook(wxPlaceHolder):
+  def make(self, parent):
+    # pull pages.
+    self._pages = self.kwargs.pop('pages', OrderedDict())
+    # No name kwarg to Notebooks.
+    self.name = self.kwargs.pop('name')
+    self.element = AuiNotebook(parent, **self.kwargs)
+    # This is shady, but if it works.
+    from Form import Form
+    for tabname, contents in self._pages.items():
+      class temp(Form):
+        def __init__(self, parent):
+          self.form = dict()
+          parts = self.form['Parts'] = OrderedDict()
+          parts[('', Form.NC)] = contents
+          super(temp, self).__init__(parent, gap = 1)
+      panel = wx.Panel(parent)
+      page = temp(panel)
+      self.element.AddPage(page, tabname)
     return self.element
 
-  def SetValue(self, val):
-    self.element.SetValue(bool(val))
+  def GetValue(self): pass
 
+  def SetValue(self, val): pass
 
-class TextCtrl(wxPlaceHolder):
+class CheckBox(wxPlaceHolder, wx.CheckBox):
   def make(self, parent): #@ReservedAssignment
-    self.element = wx.TextCtrl(parent, **self.kwargs)
+    wx.CheckBox.__init__(self, parent, **self.kwargs)
+    return self
+
+
+class TextCtrl(wxPlaceHolder, wx.TextCtrl):
+  def make(self, parent): #@ReservedAssignment
+    wx.TextCtrl.__init__(self, parent, **self.kwargs)
     if self.maxlength:
-      self.element.SetMaxLength(self.maxlength)
-    return self.element
+      self.SetMaxLength(self.maxlength)
+    return self
 
-  def Remove(self, *args):
-    return self.element.Remove(*args)
+  def SetBackgroundColor(self, color):
+    return self.SetBackgroundColour(color)
 
-  def WriteText(self, text):
-    return self.element.WriteText(text)
+#  def Remove(self, *args):
+#    return self.element.Remove(*args)
+#
+#  def WriteText(self, text):
+#    return self.element.WriteText(text)
 
 class PassCtrl(TextCtrl):
   def make(self, parent):
@@ -243,10 +336,10 @@ class PassCtrl(TextCtrl):
     return self.element.GetValue()
 
 
-class Button(wxPlaceHolder):
+class Button(wxPlaceHolder, wx.Button):
   def make(self, parent): #@ReservedAssignment
-    self.element = wx.Button(parent, **self.kwargs)
-    return self.element
+    wx.Button.__init__(self, parent, **self.kwargs)
+    return self
 
   def SetValue(self, val):
     pass
@@ -356,24 +449,35 @@ class TreeCtrl(wxPlaceHolder):
     return self.element.GetChildrenCount(item, False)
 
 
-
-class ComboBox(wxPlaceHolder):
+class ComboCtrl(wxPlaceHolder, _ComboCtrl):
   def make(self, parent):
-    self.element = wx.ComboBox(parent, **self.kwargs)
-    return self.element
+    _ComboCtrl.__init__(self, parent, **self.kwargs)
+    self.popup = ListCtrlComboPopup()
+    self.SetPopupControl(self.popup)
+    return self
+
+  def SetBackgroundColor(self, color):
+    return self.GetTextCtrl().SetBackgroundColour(color)
 
   def SetOptions(self, options):
-    self.element.Clear()
-    self.element.AppendItems(options)
+    self.popup.ClearAll()
+    for option in options:
+      self.popup.AddItem(option)
 
-  def SetValue(self, val):
-    self.element.SetValue(unicode(val))
+class ComboBox(wxPlaceHolder, wx.ComboBox):
+  def make(self, parent):
+    wx.ComboBox.__init__(self, parent, **self.kwargs)
+    return self
 
-  def Clear(self):
-    self.element.Clear()
+  def GetId(self):
+    return wx.ComboBox.GetId(self)
 
-  def Append(self, option):
-    self.element.Append(option)
+  def SetOptions(self, options):
+    self.Clear()
+    self.AppendItems(options)
+
+  def SetBackgroundColor(self, color):
+    return self.SetBackgroundColour(color)
 
 
 class SpinCtrl(wxPlaceHolder):
@@ -385,14 +489,13 @@ class SpinCtrl(wxPlaceHolder):
     self.element.SetValue(int(val))
 
 
-class RadioButton(wxPlaceHolder):
+class RadioButton(wxPlaceHolder, wx.RadioButton):
   def make(self, parent):
-    self.element = wx.RadioButton(parent, **self.kwargs)
-    return self.element
+    wx.RadioButton.__init__(self, parent, **self.kwargs)
+    return self
 
-  def SetValue(self, val):
-    self.element.SetValue(bool(val))
-
+#  def SetValue(self, val):
+#    self.element.SetValue(bool(val))
 
 class StaticBitmap(wxPlaceHolder):
   def make(self, parent):
@@ -402,6 +505,11 @@ class StaticBitmap(wxPlaceHolder):
   def SetValue(self, val):
     pass
 
+  def GetValue(self):
+    pass
+
+  def SetBitmap(self, val):
+    return self.element.SetBitmap(val)
 
 class ColorPicker(wxPlaceHolder):
   def make(self, parent):
