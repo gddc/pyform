@@ -449,21 +449,6 @@ class TreeCtrl(wxPlaceHolder):
     return self.element.GetChildrenCount(item, False)
 
 
-class ComboCtrl(wxPlaceHolder, _ComboCtrl):
-  def make(self, parent):
-    _ComboCtrl.__init__(self, parent, **self.kwargs)
-    self.popup = ListCtrlComboPopup()
-    self.SetPopupControl(self.popup)
-    return self
-
-  def SetBackgroundColor(self, color):
-    return self.GetTextCtrl().SetBackgroundColour(color)
-
-  def SetOptions(self, options):
-    self.popup.ClearAll()
-    for option in options:
-      self.popup.AddItem(option)
-
 class ComboBox(wxPlaceHolder, wx.ComboBox):
   def make(self, parent):
     wx.ComboBox.__init__(self, parent, **self.kwargs)
