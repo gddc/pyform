@@ -70,7 +70,7 @@ class Form(wx.Panel):
   NC = NO_CONTAINER = 2
   R = RIGHT_ALIGN = 4
 
-  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args): #@ReservedAssignment
+  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args):  # @ReservedAssignment
     wx.Panel.__init__(self, parent, id)
 
     self.SetSizeHints(*sizes)
@@ -94,11 +94,22 @@ class Form(wx.Panel):
       self.loadDefaults()
       self.loadOptions()
       self.build()
+      if sizes == (-1, -1):
+        self.Parent.SetSize(self.Parent.GetBestVirtualSize())
       self.bind()
+
+  def __iter__(self):
+    return ((k, self[k]) for k in self.elements.keys())
 
   def __getitem__(self, key):
     try:
-      return self.elements[key].GetValue()
+      return self.h2m(key, self.elements[key].GetValue())
+    except:
+      return
+
+  def __setitem__(self, key, value = ''):
+    try:
+      return self.elements[key].SetValue(self.m2h(key, value))
     except:
       print_exc()
 
@@ -189,8 +200,9 @@ class Form(wx.Panel):
       flags = Form.D
       display = container
 
-    sizerProportion = 1 if flags & Form.G == Form.G else 0
-    if flags & Form.NC == Form.NC:
+    self.flags = flags
+    sizerProportion = 1 if flags & Form.G else 0
+    if flags & Form.NC:
       sectionSizer = wx.BoxSizer(wx.VERTICAL)
     else:
       box = wx.StaticBox(self, -1, display)
@@ -220,7 +232,7 @@ class Form(wx.Panel):
       item = self.makeElement(block)
     sectionSizer.Add(item, proportion, flag = wx.EXPAND | wx.ALL, border = self.gap)
 
-  def makeElement(self, declarator): #@ReservedAssignment
+  def makeElement(self, declarator):  # @ReservedAssignment
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     flags = declarator.flags
     element = self.makeWidget(declarator)
@@ -304,7 +316,7 @@ class Form(wx.Panel):
       # to prevent StaticText's from ending up blank.
       value = self.form['Defaults'].get(declarator.name, declarator.GetValue())
       # Assign or populate any fields requiring it.
-      declarator.SetValue(self.MachineToHuman(declarator.name, value))
+      declarator.SetValue(self.m2h(declarator.name, value))
       declarator.SetValidator(self.form['Validators'].get(declarator.name, None))
     return element
 

@@ -90,7 +90,7 @@ class wxPlaceHolder(object):
     # To facilitate advanced forms, declarators will end up with access
     # to the Form's element list.
     self._elements = None
-    # Pull anything that doesn't belong to the actual element out of the 
+    # Pull anything that doesn't belong to the actual element out of the
     # kwargs for use when adding to the sizer, etc.
     self.name = kwargs.get('name', None)
     self.proportion = kwargs.pop('proportion', 0)
@@ -155,36 +155,36 @@ class wxPlaceHolder(object):
 
   def Validate(self):
     if hasattr(self, 'validator'):
-      return self.validator().Validate(self.element)
+      return self.validator().Validate(self)
     return True, []
 
   def SetValidator(self, validator):
     self.validator = validator
 
 
-class Panel(wxPlaceHolder):
+class Panel(wxPlaceHolder, wx.Panel):
   def make(self, parent):
-    self.element = wx.Panel(parent, **self.kwargs)
-    return self.element
+    wx.Panel.__init__(self, parent, **self.kwargs)
+    return self
 
 
-class FontPicker(wxPlaceHolder):
+class FontPicker(wxPlaceHolder, _CustomFontCtrl):
   def make(self, parent):
-    self.element = _CustomFontCtrl(parent, **self.kwargs)
-    return self.element
+    _CustomFontCtrl.__init__(self, parent, **self.kwargs)
+    return self
 
   def GetValue(self):
-    return self.element.GetSelectedFont().GetNativeFontInfoDesc()
+    return self.GetSelectedFont().GetNativeFontInfoDesc()
 
   def SetValue(self, val):
-    self.element.SetFontFromDesc(val)
+    self.SetFontFromDesc(val)
 
   def GetSelectedFont(self):
-    return self.element.GetSelectedFont()
+    return self.GetSelectedFont()
 
 
 class StaticText(wxPlaceHolder, wx.StaticText):
-  def make(self, parent): #@ReservedAssignment
+  def make(self, parent):  # @ReservedAssignment
     bold = self.kwargs.pop('bold', False)
     size = self.kwargs.pop('fontsize', None)
     wx.StaticText.__init__(self, parent, **self.kwargs)
@@ -300,13 +300,13 @@ class Notebook(wxPlaceHolder):
   def SetValue(self, val): pass
 
 class CheckBox(wxPlaceHolder, wx.CheckBox):
-  def make(self, parent): #@ReservedAssignment
+  def make(self, parent):  # @ReservedAssignment
     wx.CheckBox.__init__(self, parent, **self.kwargs)
     return self
 
 
 class TextCtrl(wxPlaceHolder, wx.TextCtrl):
-  def make(self, parent): #@ReservedAssignment
+  def make(self, parent):  # @ReservedAssignment
     wx.TextCtrl.__init__(self, parent, **self.kwargs)
     if self.maxlength:
       self.SetMaxLength(self.maxlength)
@@ -337,7 +337,7 @@ class PassCtrl(TextCtrl):
 
 
 class Button(wxPlaceHolder, wx.Button):
-  def make(self, parent): #@ReservedAssignment
+  def make(self, parent):  # @ReservedAssignment
     wx.Button.__init__(self, parent, **self.kwargs)
     return self
 
@@ -348,7 +348,7 @@ class Button(wxPlaceHolder, wx.Button):
     pass
 
 class ListHolder(wxPlaceHolder):
-  def make(self, parent): #@ReservedAssignment
+  def make(self, parent):  # @ReservedAssignment
     self.element = self.kwargs['list'](parent, **self.kwargs)
     return self.element
 
@@ -358,37 +358,45 @@ class ListHolder(wxPlaceHolder):
   def GetValue(self):
     return self.element.GetValue()
 
-class FolderBrowser(wxPlaceHolder):
-  def make(self, parent): #@ReservedAssignment
-    self.parent = parent
-    self.element = wx.DirPickerCtrl(parent, **self.kwargs)
-    self.element.GetTextCtrl().SetEditable(False)
-    return self.element
+class FolderBrowser(wxPlaceHolder, wx.DirPickerCtrl):
+  def make(self, parent):  # @ReservedAssignment
+    wx.DirPickerCtrl.__init__(self, parent, **self.kwargs)
+    self.GetTextCtrl().SetEditable(False)
+    return self
 
   def SetFocus(self):
     super(FolderBrowser, self).SetFocus()
-
-  def Enable(self, state):
-    self.element.Enable(state)
 
   def ParentBind(self, parent, evtType, evtFunc, *args, **kwargs):
     wx.Panel.Bind(parent, wx.EVT_DIRPICKER_CHANGED, evtFunc, self.element)
 
   def SetValue(self, val):
-    self.element.SetPath(val)
+    return self.SetPath(val)
 
   def GetValue(self):
-    val = self.element.GetPath()
+    val = self.GetPath()
     try:
       val = WNetGetUniversalName(val)
     except:
       pass
     return val
 
-  def Validate(self):
-    return self.validator().Validate(self.element)
+class FileBrowser(wxPlaceHolder, wx.FilePickerCtrl):
+  def make(self, parent):
+    wx.FilePickerCtrl.__init__(self, parent, **self.kwargs)
+    self.GetTextCtrl().SetEditable(False)
+    return self
 
+  def SetValue(self, val):
+    return self.SetPath(val)
 
+  def GetValue(self):
+    val = self.GetPath()
+    try:
+      val = WNetGetUniversalName(val)
+    except:
+      pass
+    return val
 
 class TreeCtrl(wxPlaceHolder):
   def make(self, parent):
@@ -534,7 +542,7 @@ class ComboTreeBox(wxPlaceHolder):
 
   def SetOptions(self, choices):
     for category, options in choices:
-      id = self.element.Append(category) #@ReservedAssignment
+      id = self.element.Append(category)  # @ReservedAssignment
 
       for option in options:
         self.element.Append(option, parent = id, clientData = category)
@@ -552,10 +560,10 @@ class FloatSpin(wxPlaceHolder):
     self.element.SetValue(float(val))
 
 
-class IpAddrCtrl(wxPlaceHolder):
+class IpAddrCtrl(wxPlaceHolder, _IpAddrCtrl):
   def make(self, parent):
-    self.element = _IpAddrCtrl(parent, **self.kwargs)
-    return self.element
+    _IpAddrCtrl.__init__(self, parent, **self.kwargs)
+    return self
 
 
 class CheckTreeCtrl(wxPlaceHolder):
