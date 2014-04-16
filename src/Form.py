@@ -18,8 +18,8 @@ class FormDialog(wx.Dialog):
                        style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
     if panel is not None:
+      self.SetTitle(title)
       self.panel = panel(self, gap = gap)
-      self.SetTitle(self.panel.form.get('Title', title))
       self.panel.SetSizeHints(*sizes)
 
       ds = wx.GridBagSizer(self.panel.gap, self.panel.gap)
@@ -96,6 +96,8 @@ class Form(wx.Panel):
       self.build()
       if sizes == (-1, -1):
         self.Parent.SetSize(self.Parent.GetBestVirtualSize())
+      if 'Title' in self.form and hasattr(parent, "SetTitle"):
+        parent.SetTitle(self.form['Title'])
       self.bind()
 
   def __iter__(self):
@@ -193,9 +195,9 @@ class Form(wx.Panel):
 
   def parseSection(self, section):
     container, blocks = section
-    try:
+    if isinstance(container, tuple):
       display, flags = container
-    except ValueError:
+    else:
       # String instead of tuple.
       flags = Form.D
       display = container
@@ -327,6 +329,7 @@ class Form(wx.Panel):
     pass
 
   def onOk(self, evt):
+    evt.Skip()
     self.onClose(evt)
 
   def onClose(self, evt):

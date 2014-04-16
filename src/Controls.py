@@ -7,17 +7,22 @@ This module contains custom classes to provide functionality from
 the wx module in specific ways.
 '''
 
-from wx.aui import AuiNotebook
-from wx.py.crust import Shell
-from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
-from wx.lib.agw.floatspin import FloatSpin as _FloatSpin
-from wx.lib.masked.ipaddrctrl import IpAddrCtrl as _IpAddrCtrl
+from collections import OrderedDict
+from itertools import product
+
 from infinity77libs.CustomTreeCtrl import CustomTreeCtrl as _CustomTreeCtrl
+from util.FlowSizer import FlowSizer
 from win32wnet import WNetGetUniversalName
 import wx
-from util.FlowSizer import FlowSizer
-from collections import OrderedDict
+from wx.aui import AuiNotebook
 from wx.combo import ComboCtrl as _ComboCtrl
+from wx.grid import Grid as _Grid
+from wx.lib.agw.floatspin import FloatSpin as _FloatSpin
+from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
+from wx.lib.masked.ipaddrctrl import IpAddrCtrl as _IpAddrCtrl
+from wx.lib.scrolledpanel import ScrolledPanel as _ScrolledPanel
+from wx.py.crust import Shell
+
 
 class _CustomFontCtrl(wx.Button):
   """
@@ -108,51 +113,6 @@ class wxPlaceHolder(object):
     self.maxlength = kwargs.pop('maxlength', None)
     self.kwargs = kwargs
 
-#  def GetId(self):
-#    return self.element.GetId()
-
-#  def GetPosition(self):
-#    return self.element.GetPosition()
-
-#  def GetScreenPosition(self):
-#    return self.element.GetScreenPosition()
-
-#  def Enable(self, state):
-#    self.element.Enable(state)
-
-#  def GetInsertionPoint(self):
-#    return self.element.GetInsertionPoint()
-
-#  def SetInsertionPoint(self, idx):
-#    return self.element.SetInsertionPoint(idx)
-
-#  def ProcessEvent(self, evt):
-#    return self.element.ProcessEvent(evt)
-
-#  def SetBackgroundColor(self, color):
-#    return self.element.SetBackgroundColour(color)
-
-#  def SetBackgroundColour(self, color):
-#    return self.element.SetBackgroundColour(color)
-
-#  def GetSelection(self):
-#    return self.element.GetSelection()
-
-#  def SetOptions(self, options):
-#    pass
-
-#  def SetFocus(self):
-#    return self.element.SetFocus()
-
-#  def SetValue(self, val):
-#    return self.element.SetValue(val)
-
-#  def GetValue(self):
-#    return self.element.GetValue()
-
-#  def ParentBind(self, parent, evtType, evtFunc, *args, **kwargs):
-#    return wx.Panel.Bind(parent, evtType, evtFunc, self, *args, **kwargs)
-
   def Validate(self):
     if hasattr(self, 'validator'):
       return self.validator().Validate(self)
@@ -161,12 +121,27 @@ class wxPlaceHolder(object):
   def SetValidator(self, validator):
     self.validator = validator
 
+class ScrolledPanel(wxPlaceHolder, _ScrolledPanel):
+  def make(self, parent):
+    _ScrolledPanel.__init__(self, parent, **self.kwargs)
+    return self
+
+  def GetValue(self):
+    return None
+
+  def SetValue(self, val):
+    pass
 
 class Panel(wxPlaceHolder, wx.Panel):
   def make(self, parent):
     wx.Panel.__init__(self, parent, **self.kwargs)
     return self
 
+  def GetValue(self):
+    return None
+
+  def SetValue(self, val):
+    pass
 
 class FontPicker(wxPlaceHolder, _CustomFontCtrl):
   def make(self, parent):
@@ -206,6 +181,42 @@ class StaticText(wxPlaceHolder, wx.StaticText):
   def SetBackgroundColor(self, *args, **kwargs):
     return self.SetBackgroundColour(*args, **kwargs)
 
+
+class Grid(wxPlaceHolder, _Grid):
+  def __init__(self, *args, **kwargs):
+    self._selected = None
+    return wxPlaceHolder.__init__(self, *args, **kwargs)
+
+  def make(self, parent):
+    _Grid.__init__(self, parent, **self.kwargs)
+    return self
+
+  def GetValue(self):
+    pass
+
+  def SetValue(self, val):
+    pass
+
+  def GetSelectedCells(self, *args, **kwargs):
+    cells = []
+    topleft = self.GetSelectionBlockTopLeft()
+    if topleft:
+      bottomright = self.GetSelectionBlockBottomRight()
+      cells.extend(self.CellsByCorners(topleft, bottomright))
+    cells.extend(super(Grid, self).GetSelectedCells())
+    if not cells:
+      cells.extend([self.GetGridCursorPos()])
+    return cells
+
+  def GetGridCursorPos(self):
+    return self.GetGridCursorRow(), self.GetGridCursorCol()
+
+  def CellsByCorners(self, toplefts, bottomrights):
+    cells = []
+    for (rowstart, colstart), (rowend, colend) in zip(toplefts, bottomrights):
+      cells.extend(product(range(rowstart, rowend + 1),
+                           range(colstart, colend + 1)))
+    return cells
 
 class ListCtrl(wxPlaceHolder, wx.ListCtrl):
   def __init__(self, *args, **kwargs):
@@ -274,30 +285,37 @@ class TextFlow(wxPlaceHolder):
     return ' '.join(word.GetLabel() for word in self.words)
 
 
-class Notebook(wxPlaceHolder):
+class Notebook(wxPlaceHolder, AuiNotebook):
   def make(self, parent):
     # pull pages.
-    self._pages = self.kwargs.pop('pages', OrderedDict())
+    self._pdict = self.kwargs.pop('pages', OrderedDict())
+    self.pages = dict()
     # No name kwarg to Notebooks.
     self.name = self.kwargs.pop('name')
-    self.element = AuiNotebook(parent, **self.kwargs)
+    AuiNotebook.__init__(self, parent, **self.kwargs)
     # This is shady, but if it works.
     from Form import Form
-    for tabname, contents in self._pages.items():
+    for tabname, contents in self._pdict.items():
       class temp(Form):
         def __init__(self, parent):
           self.form = dict()
           parts = self.form['Parts'] = OrderedDict()
-          parts[('', Form.NC)] = contents
+          parts[tabname] = contents
           super(temp, self).__init__(parent, gap = 1)
-      panel = wx.Panel(parent)
-      page = temp(panel)
-      self.element.AddPage(page, tabname)
-    return self.element
+      # panel = wx.Panel(self)
+      page = temp(self)
+      if isinstance(tabname, tuple):
+        tabname = tabname[0]
+      self.AddPage(page, tabname)
+      self.pages[tabname] = page
+    return self
 
-  def GetValue(self): pass
+  def GetValue(self):
+    pass
 
-  def SetValue(self, val): pass
+  def SetValue(self, val):
+    pass
+
 
 class CheckBox(wxPlaceHolder, wx.CheckBox):
   def make(self, parent):  # @ReservedAssignment
@@ -315,11 +333,6 @@ class TextCtrl(wxPlaceHolder, wx.TextCtrl):
   def SetBackgroundColor(self, color):
     return self.SetBackgroundColour(color)
 
-#  def Remove(self, *args):
-#    return self.element.Remove(*args)
-#
-#  def WriteText(self, text):
-#    return self.element.WriteText(text)
 
 class PassCtrl(TextCtrl):
   def make(self, parent):
