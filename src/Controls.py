@@ -18,10 +18,11 @@ from wx.aui import AuiNotebook
 from wx.combo import ComboCtrl as _ComboCtrl
 from wx.grid import Grid as _Grid
 from wx.lib.agw.floatspin import FloatSpin as _FloatSpin
-from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
+# from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
 from wx.lib.masked.ipaddrctrl import IpAddrCtrl as _IpAddrCtrl
 from wx.lib.scrolledpanel import ScrolledPanel as _ScrolledPanel
 from wx.py.crust import Shell
+from wx.lib.combotreebox import MSWComboTreeBox
 
 
 class _CustomFontCtrl(wx.Button):
@@ -99,7 +100,7 @@ class wxPlaceHolder(object):
     # kwargs for use when adding to the sizer, etc.
     self.name = kwargs.get('name', None)
     self.proportion = kwargs.pop('proportion', 0)
-    self.flags = kwargs.pop('flags', wx.ALL)
+    self.flags = kwargs.pop('flags', wx.ALL | wx.ALIGN_CENTER_VERTICAL)
     self.rowGrowable = kwargs.pop('rowGrowable', False)
     self.colGrowable = kwargs.pop('colGrowable', False)
     self.span = kwargs.pop('span', (1, 1))
@@ -336,17 +337,11 @@ class TextCtrl(wxPlaceHolder, wx.TextCtrl):
 
 class PassCtrl(TextCtrl):
   def make(self, parent):
-    self.kwargs['style'] = wx.TE_PASSWORD
+    if 'style' in self.kwargs:
+      self.kwargs['style'] |= wx.TE_PASSWORD
+    else:
+      self.kwargs['style'] = wx.TE_PASSWORD
     return super(PassCtrl, self).make(parent)
-
-  def SetValue(self, val):
-    self.element.SetValue(val)
-
-  def GetValue(self):
-    return self.element.GetValue()
-
-  def GetRawValue(self):
-    return self.element.GetValue()
 
 
 class Button(wxPlaceHolder, wx.Button):
@@ -486,13 +481,10 @@ class ComboBox(wxPlaceHolder, wx.ComboBox):
     return self.SetBackgroundColour(color)
 
 
-class SpinCtrl(wxPlaceHolder):
+class SpinCtrl(wxPlaceHolder, wx.SpinCtrl):
   def make(self, parent):
-    self.element = wx.SpinCtrl(parent, **self.kwargs)
-    return self.element
-
-  def SetValue(self, val):
-    self.element.SetValue(int(val))
+    wx.SpinCtrl.__init__(self, parent, **self.kwargs)
+    return self
 
 
 class RadioButton(wxPlaceHolder, wx.RadioButton):
@@ -538,39 +530,34 @@ class Slider(wxPlaceHolder):
     return self.element
 
 
-class ComboTreeBox(wxPlaceHolder):
+class ComboTreeBox(wxPlaceHolder, MSWComboTreeBox):
   def make(self, parent):
-    self.element = _ComboTreeBox(parent, **self.kwargs)
-    return self.element
+    MSWComboTreeBox.__init__(self, parent, **self.kwargs)
+    return self
 
-  def SetValue(self, val):
-    super(ComboTreeBox, self).SetValue(val)
-    self.element._text.SetInsertionPoint(0)
+#   def SetValue(self, val):
+#     super(ComboTreeBox, self).SetValue(val)
+#     self.element._text.SetInsertionPoint(0)
 
-  def Getvalue(self, val):
-    pass
+#   def Getvalue(self, val):
+#     pass
 
-  def GetClientData(self, selection):
-    return self.element.GetClientData(selection)
+#   def GetClientData(self, selection):
+#     return self.element.GetClientData(selection)
 
   def SetOptions(self, choices):
     for category, options in choices:
-      id = self.element.Append(category)  # @ReservedAssignment
-
+      id = self.Append(category)  # @ReservedAssignment
       for option in options:
-        self.element.Append(option, parent = id, clientData = category)
-
+        self.Append(option, parent = id, clientData = category)
       if self.expand:
-        self.element.GetTree().Expand(id)
+        self.GetTree().Expand(id)
 
 
-class FloatSpin(wxPlaceHolder):
+class FloatSpin(wxPlaceHolder, _FloatSpin):
   def make(self, parent):
-    self.element = _FloatSpin(parent, **self.kwargs)
-    return self.element
-
-  def SetValue(self, val):
-    self.element.SetValue(float(val))
+    _FloatSpin.__init__(self, parent, **self.kwargs)
+    return self
 
 
 class IpAddrCtrl(wxPlaceHolder, _IpAddrCtrl):
