@@ -1,8 +1,7 @@
-  #!/usr/bin/env pythoninter
+  #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict, defaultdict
-
 
 import wx
 from Controls import CheckBox, RadioButton, StaticText, Row
@@ -69,6 +68,8 @@ class Form(wx.Panel):
   G = GROWABLE = 1
   NC = NO_CONTAINER = 2
   R = RIGHT_ALIGN = 4
+  VC = VERTICAL_ENTER = wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL
+
 
   def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args):  # @ReservedAssignment
     wx.Panel.__init__(self, parent, id)
@@ -179,8 +180,7 @@ class Form(wx.Panel):
     sectionSizer = wx.BoxSizer(wx.VERTICAL)
     for section in container.iteritems():
       region, proportion = self.parseSection(section)
-      sectionSizer.Add(region, proportion, flag = wx.EXPAND | wx.ALL,
-                       border = self.gap)
+      sectionSizer.Add(region, proportion, flag = Form.VC, border = self.gap)
     if isinstance(outerSizer, wx.GridBagSizer):
       outerSizer.Add(sectionSizer, pos, span, border = self.gap,
                      flag = wx.ALIGN_CENTER_VERTICAL)
@@ -189,8 +189,7 @@ class Form(wx.Panel):
         outerSizer.AddGrowableRow(row)
         outerSizer.AddGrowableCol(col)
     else:
-      outerSizer.Add(sectionSizer, 1, flag = wx.EXPAND | wx.ALL,
-                     border = self.gap)
+      outerSizer.Add(sectionSizer, 1, flag = Form.VC, border = self.gap)
 
 
   def parseSection(self, section):
@@ -201,7 +200,6 @@ class Form(wx.Panel):
       # String instead of tuple.
       flags = Form.D
       display = container
-
     self.flags = flags
     sizerProportion = 1 if flags & Form.G else 0
     if flags & Form.NC:
@@ -231,18 +229,8 @@ class Form(wx.Panel):
       item = self.makeRow(block)
     else:
       proportion = block.proportion
-      item = self.makeElement(block)
-    sectionSizer.Add(item, proportion, flag = wx.EXPAND | wx.ALL, border = self.gap)
-
-  def makeElement(self, declarator):  # @ReservedAssignment
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    flags = declarator.flags
-    element = self.makeWidget(declarator)
-    sizer.Add(element,
-              declarator.proportion,
-              border = self.gap if declarator.gap is None else declarator.gap,
-              flag = wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | flags)
-    return sizer
+      item = self.makeWidget(block)
+    sectionSizer.Add(item, proportion, flag = Form.VC, border = self.gap)
 
   def makeRow(self, fields):
     """
@@ -254,9 +242,6 @@ class Form(wx.Panel):
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     for field in fields:
       self.parseBlock(field, sizer)
-
-#      sizer.Add(self.makeElement(field), proportion,
-#                flag = wx.ALIGN_CENTER_VERTICAL | wx.ALL)
     return sizer
 
   def makeGrid(self, rows):
@@ -349,7 +334,6 @@ class Form(wx.Panel):
     if Messages:
       text = '\r\n'.join(Messages)
       wx.MessageDialog(self, text, "Form Field Error", wx.OK).ShowModal()
-
     return Success
 
 if __name__ == "__main__":
