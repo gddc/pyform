@@ -155,8 +155,11 @@ class FontPicker(wxPlaceHolder, _CustomFontCtrl):
   def SetValue(self, val):
     self.SetFontFromDesc(val)
 
-  def GetSelectedFont(self):
-    return self.GetSelectedFont()
+
+class StaticLine(wxPlaceHolder, wx.StaticLine):
+  def make(self, parent):
+    wx.StaticLine.__init__(self, parent, **self.kwargs)
+    return self
 
 
 class StaticText(wxPlaceHolder, wx.StaticText):
@@ -406,11 +409,10 @@ class FileBrowser(wxPlaceHolder, wx.FilePickerCtrl):
       pass
     return val
 
-class TreeCtrl(wxPlaceHolder):
+class TreeCtrl(wxPlaceHolder, wx.TreeCtrl):
   def make(self, parent):
-    self.parent = parent
-    self.element = wx.TreeCtrl(parent, **self.kwargs)
-    return self.element
+    wx.TreeCtrl.__init__(self, parent, **self.kwargs)
+    return self
 
   def SetValue(self, val):
     pass
@@ -524,10 +526,10 @@ class ColorPicker(wxPlaceHolder):
                     'blue': color.Blue()})
 
 
-class Slider(wxPlaceHolder):
+class Slider(wxPlaceHolder, wx.Slider):
   def make(self, parent):
-    self.element = wx.Slider(parent, **self.kwargs)
-    return self.element
+    wx.Slider.__init__(self, parent, **self.kwargs)
+    return self
 
 
 class ComboTreeBox(wxPlaceHolder, MSWComboTreeBox):

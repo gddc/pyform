@@ -4,10 +4,37 @@ Created on Dec 16, 2012
 @author: daniel
 '''
 
-from Form import Form, FormDialog
 from collections import OrderedDict
-from Controls import *
-from wx._core import CallAfter
+
+from Controls import (Button, StaticText, CheckBox, FontPicker, TextCtrl,
+  PassCtrl, TreeCtrl, ComboBox, FloatSpin, IpAddrCtrl, RadioButton, ColorPicker,
+  Slider, Row, StaticLine)
+from Form import Form, FormDialog
+import wx
+
+
+class MainDemo(Form):
+  def __init__(self, parent, **kwargs):
+    self.form = dict(Title = 'PyForm Demo Selections')
+    self.form['Parts'] = parts = OrderedDict()
+    parts['Buttons', Form.NC] = buttons = list()
+    buttons.extend([(Button(name = 'DemoForm', label = 'Demo Form 1'),
+                     Button(name = 'DemoFormGrowable', label = 'Expanding Demo'),
+                     Button(name = 'DemoNested', label = 'Nesting Containers'),
+                     Button(name = 'DemoNestedHorizontal', label = 'Side By Side'),
+                     Button(name = 'ComplicatedDemo', label = 'Too Complex'),
+                     Button(name = 'ComprehensiveDemo', label = 'Lots of Controls')),
+                    (StaticLine(proportion = 1),),
+                    (Button(name = 'GridDemos', label = 'A grid?'),
+                     Button(name = 'DemoLeftStacked', label = 'Stacking Containers'),
+                     Button(name = 'AlternateDeclaration', label = 'Another Way'),
+                     Button(name = 'LineDemo', label = 'Static Lines'))])
+    super(MainDemo, self).__init__(parent, **kwargs)
+
+  def bind(self):
+    Form.bind(self)
+    for name in self.elements.keys():
+      self.Bind(wx.EVT_BUTTON, lambda e, f = globals()[name]: FormDialog(self, f, modal = True), name)
 
 
 class DemoForm(Form):
@@ -34,6 +61,7 @@ class DemoForm(Form):
                panel = DemoFormGrowable,
                offset = 25)
 
+
 class DemoFormGrowable(Form):
   def __init__(self, parent, **kwargs):
     self.form = {
@@ -45,6 +73,7 @@ class DemoFormGrowable(Form):
       ])
     }
     Form.__init__(self, parent, **kwargs)
+
 
 class DemoNested(Form):
   def __init__(self, parent, **kwargs):
@@ -66,6 +95,7 @@ class DemoNested(Form):
       ])
     }
     Form.__init__(self, parent, **kwargs)
+
 
 class DemoNestedHorizontal(Form):
   def __init__(self, parent, **kwargs):
@@ -127,7 +157,7 @@ class ComprehensiveDemo(Form):
       'Title': 'Comprehensively Complicated',
       'Parts':  OrderedDict([
         ('Lots Of Types of Elements', [
-          # These first several are stand alone.                               
+          # These first several are stand alone.
           FontPicker(name = 'FontPicker'),
           StaticText(label = "We've seen these.  This one is unnamed."),
           CheckBox(name = 'Check1', label = "Checkboxes are fun.  This one "
@@ -137,7 +167,7 @@ class ComprehensiveDemo(Form):
           (StaticText(label = "Passwords can be accomodated."),
            PassCtrl(name = "Pass1")),
           Button(name = 'Button1', label = "This is just a button."),
-          TreeCtrl(name = 'Tree1', proportion = 1), #todo tree needs populated.
+          TreeCtrl(name = 'Tree1', proportion = 1),  # todo tree needs populated.
           # Grids take place here.
           [(ComboBox(name = 'Combo1', choices = ['1', '2', '3']),
             FloatSpin(name = 'FloatSpin1', min_val = 0, max_val = 30, digits = 2,
@@ -208,6 +238,7 @@ class AlternateDeclaration(Form):
     outer.append(StaticText(label = "And some text."))
     outer.append((StaticText(label = "These should form ", gap = 0),
                   StaticText(label = "a row.", gap = 0)))
+    outer.append(StaticText(label = 'The significance of this form lies in the Source.  You\'ll need to look there ... '))
     inner = OrderedDict([])
     inner['Sub 1'] = sub1 = list()
     sub1.append(ComboBox(name = 'Combo', proportion = 1))
@@ -262,3 +293,21 @@ class NonDialog(Form):
     inner[('Sub Region 1', Form.G)] = list()
     super(NonDialog, self).__init__(parent, **kwargs)
 
+
+class LineDemo(Form):
+  def __init__(self, parent, **kwargs):
+    self.form = dict(Title = 'Line Demo')
+    self.form['Parts'] = parts = OrderedDict()
+    parts['Container', Form.NC] = [(Button(label = 'Analyze All', proportion = 1),),
+                                   (StaticLine(proportion = 1),),
+                                   (Button(label = 'Plot FWHM', proportion = 1),
+                                    Button(label = 'Save Data', proportion = 1))]
+    super(LineDemo, self).__init__(parent, **kwargs)
+
+
+if __name__ == '__main__':
+  app = wx.PySimpleApp()
+  f = wx.Frame(None)
+  MainDemo(f)
+  f.Show()
+  app.MainLoop()
