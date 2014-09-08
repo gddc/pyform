@@ -261,18 +261,16 @@ class Form(wx.Panel):
         span = getattr(field, 'span', (1, 1))
         pos = (getattr(field, 'rowpos', row) or row,
                getattr(field, 'colpos', col) or col)
-
-        if rowGrowable:
-          sizer.AddGrowableRow(row)
-        if colGrowable:
-          sizer.AddGrowableCol(col)
-
         if isinstance(field, OrderedDict):
           self.parseContainer(field, sizer, pos, span)
         else:
           element = self.makeWidget(field)
           sizer.Add(element, pos, span, border = self.gap,
                     flag = wx.ALIGN_CENTER_VERTICAL | flags)
+        if rowGrowable and row < sizer.GetRows() and not sizer.IsRowGrowable(row):
+          sizer.AddGrowableRow(row)
+        if colGrowable and col < sizer.GetCols() and not sizer.IsColGrowable(col):
+          sizer.AddGrowableCol(col)
     return sizer
 
   def makeWidget(self, declarator):
