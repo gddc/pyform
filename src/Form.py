@@ -12,13 +12,13 @@ from traceback import print_exc
 class FormDialog(wx.Dialog):
   def __init__(self, parent, panel = None, title = "Unnamed Dialog",
                modal = False, sizes = (-1, -1), offset = None, gap = 3,
-               position = None):
+               position = None, refid = None):
     wx.Dialog.__init__(self, parent, -1, title,
                        style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
     if panel is not None:
       self.SetTitle(title)
-      self.panel = panel(self, gap = gap)
+      self.panel = panel(self, gap = gap, refid = refid)
       self.panel.SetSizeHints(*sizes)
 
       ds = wx.GridBagSizer(self.panel.gap, self.panel.gap)
@@ -71,7 +71,7 @@ class Form(wx.Panel):
   VC = VERTICAL_ENTER = wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL
 
 
-  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), *args):  # @ReservedAssignment
+  def __init__(self, parent = None, id = -1, gap = 3, sizes = (-1, -1), refid = None, *args):  # @ReservedAssignment
     wx.Panel.__init__(self, parent, id)
 
     self.SetSizeHints(*sizes)
@@ -168,6 +168,9 @@ class Form(wx.Panel):
     self.SetSizerAndFit(panelSizer)
 
   def bind(self):
+    # Attempt to accommodate non-dialog parents.
+    if not isinstance(self.Parent, FormDialog):
+      self.Parent.Bind(wx.EVT_CLOSE, self.onClose)
     for name, table in self.ATables.items():
       if table:
         at = []
@@ -316,6 +319,7 @@ class Form(wx.Panel):
     self.onClose(evt)
 
   def onClose(self, evt):
+    evt.Skip()
     if isinstance(self.Parent, FormDialog):
       self.Parent.FocusNext()
 

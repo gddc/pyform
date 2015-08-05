@@ -8,6 +8,7 @@ the wx module in specific ways.
 '''
 
 from collections import OrderedDict
+import ctypes
 from itertools import product
 
 from infinity77libs.CustomTreeCtrl import CustomTreeCtrl as _CustomTreeCtrl
@@ -15,16 +16,16 @@ from util.FlowSizer import FlowSizer
 from win32wnet import WNetGetUniversalName
 import wx
 from wx.aui import AuiNotebook
-from wx.combo import ComboCtrl as _ComboCtrl
 from wx.grid import Grid as _Grid
 from wx.lib.agw.floatspin import FloatSpin as _FloatSpin
-# from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
+from wx.lib.combotreebox import MSWComboTreeBox
 from wx.lib.masked.ipaddrctrl import IpAddrCtrl as _IpAddrCtrl
+from wx.lib.masked.numctrl import NumCtrl as _NumCtrl
 from wx.lib.scrolledpanel import ScrolledPanel as _ScrolledPanel
 from wx.py.crust import Shell
-from wx.lib.combotreebox import MSWComboTreeBox
 
 
+# from wx.lib.combotreebox import ComboTreeBox as _ComboTreeBox
 class _CustomFontCtrl(wx.Button):
   """
     This custom font control class provides a Font Dialog that displays with
@@ -103,6 +104,7 @@ class wxPlaceHolder(object):
     self.flags = kwargs.pop('flags', wx.ALL | wx.ALIGN_CENTER_VERTICAL)
     self.rowGrowable = kwargs.pop('rowGrowable', False)
     self.colGrowable = kwargs.pop('colGrowable', False)
+    self.border= kwargs.pop('border', 0)
     self.span = kwargs.pop('span', (1, 1))
     self.size = kwargs.get('size', (-1, -1))
     self.rowpos = kwargs.pop('rowpos', None)
@@ -122,6 +124,7 @@ class wxPlaceHolder(object):
   def SetValidator(self, validator):
     self.validator = validator
 
+
 class ScrolledPanel(wxPlaceHolder, _ScrolledPanel):
   def make(self, parent):
     _ScrolledPanel.__init__(self, parent, **self.kwargs)
@@ -133,6 +136,7 @@ class ScrolledPanel(wxPlaceHolder, _ScrolledPanel):
   def SetValue(self, val):
     pass
 
+
 class Panel(wxPlaceHolder, wx.Panel):
   def make(self, parent):
     wx.Panel.__init__(self, parent, **self.kwargs)
@@ -143,6 +147,7 @@ class Panel(wxPlaceHolder, wx.Panel):
 
   def SetValue(self, val):
     pass
+
 
 class FontPicker(wxPlaceHolder, _CustomFontCtrl):
   def make(self, parent):
@@ -221,6 +226,7 @@ class Grid(wxPlaceHolder, _Grid):
       cells.extend(product(range(rowstart, rowend + 1),
                            range(colstart, colend + 1)))
     return cells
+
 
 class ListCtrl(wxPlaceHolder, wx.ListCtrl):
   def __init__(self, *args, **kwargs):
@@ -358,6 +364,7 @@ class Button(wxPlaceHolder, wx.Button):
   def GetValue(self):
     pass
 
+
 class ListHolder(wxPlaceHolder):
   def make(self, parent):  # @ReservedAssignment
     self.element = self.kwargs['list'](parent, **self.kwargs)
@@ -368,6 +375,7 @@ class ListHolder(wxPlaceHolder):
 
   def GetValue(self):
     return self.element.GetValue()
+
 
 class FolderBrowser(wxPlaceHolder, wx.DirPickerCtrl):
   def make(self, parent):  # @ReservedAssignment
@@ -392,6 +400,7 @@ class FolderBrowser(wxPlaceHolder, wx.DirPickerCtrl):
       pass
     return val
 
+
 class FileBrowser(wxPlaceHolder, wx.FilePickerCtrl):
   def make(self, parent):
     wx.FilePickerCtrl.__init__(self, parent, **self.kwargs)
@@ -409,6 +418,7 @@ class FileBrowser(wxPlaceHolder, wx.FilePickerCtrl):
       pass
     return val
 
+
 class TreeCtrl(wxPlaceHolder, wx.TreeCtrl):
   def make(self, parent):
     wx.TreeCtrl.__init__(self, parent, **self.kwargs)
@@ -418,6 +428,8 @@ class TreeCtrl(wxPlaceHolder, wx.TreeCtrl):
     pass
 
   def GetValue(self, selection = None):
+    if self.GetWindowStyle() & wx.TR_MULTIPLE:
+      return
     if selection is None:
       pieces = []
       item = self.GetSelection()
@@ -432,39 +444,6 @@ class TreeCtrl(wxPlaceHolder, wx.TreeCtrl):
       else:
         return None
     return self.element.GetItemText(selection)
-
-  def GetSelection(self):
-    return self.element.GetSelection()
-
-  def SetImageList(self, il):
-    return self.element.SetImageList(il)
-
-  def AddRoot(self, *args):
-    return self.element.AddRoot(*args)
-
-  def AppendItem(self, *args, **kwargs):
-    return self.element.AppendItem(*args, **kwargs)
-
-  def GetPyData(self, item):
-    return self.element.GetPyData(item)
-
-  def SetPyData(self, item):
-    return self.element.SetPyData(item)
-
-  def SetItemHasChildren(self, *args):
-    return self.element.SetItemHasChildren(*args)
-
-  def GetItemParent(self, item):
-    return self.element.GetItemParent(item)
-
-  def GetItemText(self, item):
-    return self.element.GetItemText(item)
-
-  def Expand(self, leaf):
-    return self.element.Expand(leaf)
-
-  def GetChildrenCount(self, item):
-    return self.element.GetChildrenCount(item, False)
 
 
 class ComboBox(wxPlaceHolder, wx.ComboBox):
@@ -494,8 +473,6 @@ class RadioButton(wxPlaceHolder, wx.RadioButton):
     wx.RadioButton.__init__(self, parent, **self.kwargs)
     return self
 
-#  def SetValue(self, val):
-#    self.element.SetValue(bool(val))
 
 class StaticBitmap(wxPlaceHolder):
   def make(self, parent):
@@ -510,6 +487,7 @@ class StaticBitmap(wxPlaceHolder):
 
   def SetBitmap(self, val):
     return self.element.SetBitmap(val)
+
 
 class ColorPicker(wxPlaceHolder):
   def make(self, parent):
@@ -623,7 +601,121 @@ class HyperlinkCtrl(wxPlaceHolder):
   def SetLabel(self, label):
     self.element.SetLabel(label)
 
+
 class Console(wxPlaceHolder):
   def make(self, parent):
     self.element = Shell(parent = parent)
     return self.element
+
+
+class DatePickerCtrl(wxPlaceHolder, wx.DatePickerCtrl):
+  def make(self, parent):
+    wx.DatePickerCtrl.__init__(self, parent, **self.kwargs)
+    return self
+
+
+class PrinterBrowser(wxPlaceHolder):
+  C_Print_Errors = {
+    0xFFFF: "The dialog box could not be created. The common dialog box function's call to the DialogBox function failed. For example, this error occurs if the common dialog box call specifies an invalid window handle.",
+    0x0006: "The common dialog box function failed to find a specified resource.",
+    0x0002: "The common dialog box function failed during initialization. This error often occurs when sufficient memory is not available.",
+    0x0007: "The common dialog box function failed to load a specified resource.",
+    0x0005: "The common dialog box function failed to load a specified string.",
+    0x0008: "The common dialog box function failed to lock a specified resource.",
+    0x0009: "The common dialog box function was unable to allocate memory for internal structures.",
+    0x000A: "The common dialog box function was unable to lock the memory associated with a handle.",
+    0x0004: "The ENABLETEMPLATE flag was set in the Flags member of the initialization structure for the corresponding common dialog box, but you failed to provide a corresponding instance handle.",
+    0x000B: "The ENABLEHOOK flag was set in the Flags member of the initialization structure for the corresponding common dialog box, but you failed to provide a pointer to a corresponding hook procedure.",
+    0x0003: "The ENABLETEMPLATE flag was set in the Flags member of the initialization structure for the corresponding common dialog box, but you failed to provide a corresponding template.",
+    0x000C: "The RegisterWindowMessage function returned an error code when it was called by the common dialog box function.",
+    0x0001: "The lStructSize member of the initialization structure for the corresponding common dialog box is invalid.",
+    0x100A: "The PrintDlg function failed when it attempted to create an information context.",
+    0x100C: "You called the PrintDlg function with the DN_DEFAULTPRN flag specified in the wDefault member of the DEVNAMES structure, but the printer described by the other structure members did not match the current default printer. (This error occurs when you store the DEVNAMES structure and the user changes the default printer by using the Control Panel.)",
+    0x1009: "The data in the DEVMODE and DEVNAMES structures describes two different printers.",
+    0x1005: "The printer driver failed to initialize a DEVMODE structure.",
+    0x1006: "The PrintDlg function failed during initialization, and there is no more specific extended error code to describe the failure. This is the generic default error code for the function.",
+    0x1004: "The PrintDlg function failed to load the device driver for the specified printer.",
+    0x1008: "A default printer does not exist.",
+    0x1007: "No printer drivers were found.",
+    0x1002: "The PrintDlg function failed to parse the strings in the [devices] section of the WIN.INI file.",
+    0x100B: "The [devices] section of the WIN.INI file did not contain an entry for the requested printer.",
+    0x1003: "The PD_RETURNDEFAULT flag was specified in the Flags member of the PRINTDLG structure, but the hDevMode or hDevNames member was not NULL.",
+    0x1001: "The PrintDlg function failed to load the required resources.",
+  }
+
+  def make(self, parent):
+    self.parent = parent
+    self.dll = self.kwargs.pop('dll', None)
+    self.devmode = getattr(parent, 'devmode', None)
+    self.txt = wx.TextCtrl(parent, style = wx.TE_READONLY)
+    self.btn = wx.Button(parent, label = 'Browse ...')
+    self.element = wx.BoxSizer(wx.HORIZONTAL)
+    self.element.Add(self.txt, proportion = 1, flag = wx.EXPAND | wx.RIGHT, border = 3)
+    self.element.Add(self.btn, flag = wx.LEFT, border = 3)
+    return self.element
+
+  def Bind(self, evttype, evtfunc):
+    self.btn.Bind(evttype, evtfunc)
+
+  def SetValue(self, val):
+    return self.txt.SetValue(val)
+
+  def GetValue(self):
+    return self.txt.GetValue()
+
+  def GetDevMode(self):
+    return self.devmode
+
+  def onBrowse(self, evt):
+    try:
+      rpmclient = ctypes.cdll.LoadLibrary(self.dll)
+      rpmclient.printer_setup.argtypes = [ctypes.c_void_p,
+                                          ctypes.c_wchar_p,
+                                          ctypes.c_char_p,
+                                          ctypes.c_int32,
+                                          ctypes.POINTER(ctypes.c_wchar_p),
+                                          ctypes.POINTER(ctypes.c_char_p)]
+
+      rpmclient.printer_setup.restype = ctypes.c_int32
+      rpmclient.CleanupA.argtypes = [ctypes.c_char_p]
+      rpmclient.CleanupA.restype = ctypes.c_int32
+      rpmclient.CleanupW.argtypes = [ctypes.c_wchar_p]
+      rpmclient.CleanupW.restype = ctypes.c_int32
+
+      p_in = ctypes.c_wchar_p(self.txt.GetValue())
+      p_out = ctypes.c_wchar_p()
+
+      d_in = ctypes.c_char_p(getattr(self, 'devmode', ''))
+      d_out = ctypes.c_char_p()
+
+      res = rpmclient.printer_setup(self.parent.GetHandle(),
+                                    p_in,
+                                    d_in,
+                                    False,
+                                    p_out,
+                                    d_out)
+
+      if res == 0:
+        return
+
+      if res > 1:
+        if res in self.C_Print_Errors:
+          wx.MessageDialog(self,
+                           self.C_Print_Errors[res],
+                           _("Printer Dialog").decode('utf-8'),
+                           wx.OK | wx.ICON_ERROR).ShowModal()
+
+        return
+
+      self.txt.SetValue(p_out.value)
+      self.devmode = d_out.value
+    except Exception, e:
+      print self.dll
+      print e
+
+
+class NumCtrl(wxPlaceHolder, _NumCtrl):
+  def make(self, parent):
+    _NumCtrl.__init__(self, parent, **self.kwargs)
+    return self
+

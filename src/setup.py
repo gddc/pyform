@@ -11,7 +11,7 @@ from distutils.core import setup
 
 
 setup(name = 'pyform',
-      version = '0.2a',
+      version = '0.6a',
       packages = ['util'],
       py_modules = ['Form', 'Demos', 'Controls'])
 
