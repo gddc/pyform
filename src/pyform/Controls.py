@@ -128,29 +128,23 @@ class wxPlaceHolder(object):
     def SetValidator(self, validator):
         self.validator = validator
 
+    def GetValue(self):
+        pass
+
+    def SetValue(self, value):
+        pass
+
 
 class ScrolledPanel(wxPlaceHolder, _ScrolledPanel):
     def make(self, parent):
         _ScrolledPanel.__init__(self, parent, **self.kwargs)
         return self
 
-    def GetValue(self):
-        return None
-
-    def SetValue(self, val):
-        pass
-
 
 class Panel(wxPlaceHolder, wx.Panel):
     def make(self, parent):
         wx.Panel.__init__(self, parent, **self.kwargs)
         return self
-
-    def GetValue(self):
-        return None
-
-    def SetValue(self, val):
-        pass
 
 
 class FontPicker(wxPlaceHolder, _CustomFontCtrl):
@@ -188,7 +182,6 @@ class StaticText(wxPlaceHolder, wx.StaticText):
         if bold:
             font.SetWeight(wx.BOLD)
         self.SetFont(font)
-
         return self
 
     def SetValue(self, val):
@@ -209,12 +202,6 @@ class Grid(wxPlaceHolder, _Grid):
     def make(self, parent):
         _Grid.__init__(self, parent, **self.kwargs)
         return self
-
-    def GetValue(self):
-        pass
-
-    def SetValue(self, val):
-        pass
 
     def GetSelectedCells(self, *args, **kwargs):
         cells = []
@@ -257,12 +244,6 @@ class ListCtrl(wxPlaceHolder, wx.ListCtrl):
     def GetTextSelection(self):
         return self.GetItemText(self._selected)
 
-    def GetValue(self):
-        pass
-
-    def SetValue(self, val):
-        pass
-
 
 class CheckListBox(wxPlaceHolder, wx.CheckListBox):
     def __init__(self, *args, **kwargs):
@@ -298,9 +279,6 @@ class TextFlow(wxPlaceHolder):
             self.element.Add(text, flag=wx.TOP | wx.RIGHT, border=2)
         return self.element
 
-    def SetValue(self, val):
-        pass
-
     def GetValue(self):
         return ' '.join(word.GetLabel() for word in self.words)
 
@@ -330,12 +308,6 @@ class Notebook(wxPlaceHolder, AuiNotebook):
             self.AddPage(page, tabname)
             self.pages[tabname] = page
         return self
-
-    def GetValue(self):
-        pass
-
-    def SetValue(self, val):
-        pass
 
 
 class CheckBox(wxPlaceHolder, wx.CheckBox):
@@ -369,20 +341,11 @@ class Button(wxPlaceHolder, wx.Button):
         wx.Button.__init__(self, parent, **self.kwargs)
         return self
 
-    def SetValue(self, val):
-        pass
-
-    def GetValue(self):
-        pass
-
 
 class ListHolder(wxPlaceHolder):
     def make(self, parent):  # @ReservedAssignment
         self.element = self.kwargs['list'](parent, **self.kwargs)
         return self.element
-
-    def SetValue(self, val):
-        pass
 
     def GetValue(self):
         return self.element.GetValue()
@@ -434,9 +397,6 @@ class TreeCtrl(wxPlaceHolder, wx.TreeCtrl):
     def make(self, parent):
         wx.TreeCtrl.__init__(self, parent, **self.kwargs)
         return self
-
-    def SetValue(self, val):
-        pass
 
     def GetValue(self, selection=None):
         if self.GetWindowStyle() & wx.TR_MULTIPLE:
@@ -490,12 +450,6 @@ class StaticBitmap(wxPlaceHolder):
         self.element = wx.StaticBitmap(parent, **self.kwargs)
         return self.element
 
-    def SetValue(self, val):
-        pass
-
-    def GetValue(self):
-        pass
-
     def SetBitmap(self, val):
         return self.element.SetBitmap(val)
 
@@ -525,16 +479,6 @@ class ComboTreeBox(wxPlaceHolder, MSWComboTreeBox):
     def make(self, parent):
         MSWComboTreeBox.__init__(self, parent, **self.kwargs)
         return self
-
-    #   def SetValue(self, val):
-    #     super(ComboTreeBox, self).SetValue(val)
-    #     self.element._text.SetInsertionPoint(0)
-
-    #   def Getvalue(self, val):
-    #     pass
-
-    #   def GetClientData(self, selection):
-    #     return self.element.GetClientData(selection)
 
     def SetOptions(self, choices):
         for category, options in choices:
