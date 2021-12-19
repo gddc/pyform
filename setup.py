@@ -7,14 +7,14 @@ Created on Dec 24, 2012
 @author: daniel
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
-    name='pyform',
-    version='1.0.3',
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
+    name="pyform",
+    version="1.0.3",
+    package_dir={"": "src"},
+    packages=find_packages("src"),
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

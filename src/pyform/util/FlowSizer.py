@@ -1,8 +1,8 @@
-'''
+"""
 Created on Aug 23, 2012
 
 @author: daniel
-'''
+"""
 
 # -------------------------------------------------------------------------------
 #  Class: FlowSizer
@@ -22,9 +22,9 @@ class FlowSizer(wx.PySizer):
     """
 
     def __init__(self, orient=wx.HORIZONTAL):
-        '''
+        """
         Initializes the object:
-        '''
+        """
         super(FlowSizer, self).__init__()
         self._orient = orient
         self._frozen = False
@@ -37,7 +37,7 @@ class FlowSizer(wx.PySizer):
         if self._needed_size is not None:
             return self._needed_size
 
-        horizontal = (self._orient == wx.HORIZONTAL)
+        horizontal = self._orient == wx.HORIZONTAL
         dx = dy = i = 0
 
         while True:
@@ -62,7 +62,7 @@ class FlowSizer(wx.PySizer):
         Layout the contents of the sizer based on the sizer's current size
         and position.
         """
-        horizontal = (self._orient == wx.HORIZONTAL)
+        horizontal = self._orient == wx.HORIZONTAL
         x, y = self.GetPosition()
         dx, dy = self.GetSize()
         x0, y0 = x, y
@@ -86,7 +86,7 @@ class FlowSizer(wx.PySizer):
             if horizontal:
                 if (x > x0) and ((x + idx) > ex):
                     x = x0
-                    y += (mdy + sdy)
+                    y += mdy + sdy
                     mdy = sdy = 0
                     if y >= ey:
                         visible = False
@@ -106,7 +106,7 @@ class FlowSizer(wx.PySizer):
             else:
                 if (y > y0) and ((y + idy) > ey):
                     y = y0
-                    x += (mdx + sdx)
+                    x += mdx + sdx
                     mdx = sdx = 0
                     if x >= ex:
                         visible = False
@@ -133,8 +133,8 @@ class FlowSizer(wx.PySizer):
                 max_dx = max(dx, x + mdx + sdx - x0)
             self._needed_size = wx.Size(max_dx, max_dy)
             if not self._frozen:
-                self._do_parent('_freeze')
-            do_later(self._do_parent, '_thaw')
+                self._do_parent("_freeze")
+            do_later(self._do_parent, "_thaw")
         else:
             self._needed_size = None
 
@@ -196,9 +196,11 @@ class DoLaterTimer(wx.Timer):
         global active_timers
         wx.Timer.__init__(self)
         for timer in self.active_timers:
-            if ((timer.callable == callable) and
-                    (timer.args == args) and
-                    (timer.kw_args == kw_args)):
+            if (
+                    (timer.callable == callable)
+                    and (timer.args == args)
+                    and (timer.kw_args == kw_args)
+            ):
                 timer.Start(interval, True)
                 return
         self.active_timers.append(self)
