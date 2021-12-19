@@ -10,7 +10,7 @@ Created on Dec 24, 2012
 from setuptools import find_packages, setup
 
 setup(
-    name="pyform",
+    name="ghostdev.pyform",
     version="1.0.3",
     package_dir={"": "src"},
     packages=find_packages("src"),
