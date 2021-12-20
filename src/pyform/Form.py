@@ -42,11 +42,21 @@ class FormDialog(wx.Dialog):
                 self.panel.gap,
             )
 
-            self.bs = self.CreateButtonSizer(
-                self.panel.form.get("Buttons", wx.OK | wx.CANCEL)
-            )
+            if "AddButtons" in self.panel.form:
+                self.bs = wx.GridBagSizer()
+                self.bs.AddGrowableCol(0)
+                for col, (label, wx_id) in enumerate(self.panel.form["AddButtons"].items(), start=1):
+                    button = wx.Button(self, label=label, id=wx_id)
+                    self.bs.Add(button, (0, col))
+                    if hasattr(self.panel, f"on{label}"):
+                        self.Bind(wx.EVT_BUTTON, getattr(self.panel, f"on{label}"), id=wx_id)
+            else:
+                self.bs = self.CreateButtonSizer(
+                    self.panel.form.get("Buttons", wx.OK | wx.CANCEL)
+                )
+                self.Bind(wx.EVT_BUTTON, self.panel.onOk, id=wx.ID_OK)
+                self.Bind(wx.EVT_BUTTON, self.panel.onClose, id=wx.ID_CANCEL)
             ds.Add(self.bs, (2, 0), (1, 1), wx.ALIGN_RIGHT | wx.ALL, self.panel.gap)
-
             ds.AddGrowableCol(0)
             ds.AddGrowableRow(0)
 
@@ -59,9 +69,6 @@ class FormDialog(wx.Dialog):
             if offset:
                 newpos = map(lambda x: x + offset, self.GetPosition())
                 self.SetPosition(wx.Point(*newpos))
-
-            self.Bind(wx.EVT_BUTTON, self.panel.onOk, id=wx.ID_OK)
-            self.Bind(wx.EVT_BUTTON, self.panel.onClose, id=wx.ID_CANCEL)
 
             for wrapper in self.panel.elements.values():
                 if not isinstance(wrapper, (RadioButton, CheckBox, StaticText)):
@@ -78,7 +85,6 @@ class FormDialog(wx.Dialog):
             if isinstance(child, FormDialog) and child is not self:
                 child.Raise()
                 break
-
         self.Destroy()
 
 

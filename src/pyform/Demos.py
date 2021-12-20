@@ -49,6 +49,7 @@ class MainDemo(Form):
                     Button(name="DemoLeftStacked", label="Stacking Containers"),
                     Button(name="AlternateDeclaration", label="Another Way"),
                     Button(name="LineDemo", label="Static Lines"),
+                    Button(name="AddButtons", label="Custom Buttons"),
                 ),
             ]
         )
@@ -59,7 +60,7 @@ class MainDemo(Form):
         for name in self.elements.keys():
             self.Bind(
                 wx.EVT_BUTTON,
-                lambda e, f=globals()[name]: FormDialog(self, f, modal=True),
+                lambda e, f=globals()[name]: FormDialog(self, f),
                 name,
             )
 
@@ -507,6 +508,30 @@ class LineDemo(Form):
             ),
         ]
         super(LineDemo, self).__init__(parent, **kwargs)
+
+
+class AddButtons(Form):
+    """
+    This demonstrates how to add custom buttons to a Dialog.
+    Using AddButtons will prevent the standard buttons from
+    being added to the form - you'll have to add _all_ buttons
+    you want to use.
+
+    When creating buttons this way, the FormDialog will attempt
+    to bind each button to a corresponding `on<Name>` method
+    on your form. If you want button events, add these methods.
+    """
+    def __init__(self, parent, **kwargs):
+        print(wx.ID_YES, wx.ID_OK)
+        self.form = dict(
+            Title="Custom Buttons",
+            Parts=OrderedDict(Spacer=[StaticLine()]),
+            AddButtons=dict(
+                Save=wx.NewIdRef(1),
+                Ok=wx.NewIdRef(1),
+            ),
+        )
+        super().__init__(parent, **kwargs)
 
 
 if __name__ == "__main__":
