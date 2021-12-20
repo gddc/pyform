@@ -12,7 +12,6 @@ from collections import OrderedDict
 from itertools import product
 
 import wx
-from win32wnet import WNetGetUniversalName
 from wx.adv import DatePickerCtrl as DatePickerCtrl_
 from wx.aui import AuiNotebook
 from wx.grid import Grid as Grid_
@@ -419,12 +418,7 @@ class FolderBrowser(wxPlaceHolder, wx.DirPickerCtrl):
         return self.SetPath(val)
 
     def GetValue(self):
-        val = self.GetPath()
-        try:
-            val = WNetGetUniversalName(val)
-        except:
-            pass
-        return val
+        return self.GetPath()
 
 
 class FileBrowser(wxPlaceHolder, wx.FilePickerCtrl):
