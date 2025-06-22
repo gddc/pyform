@@ -67,28 +67,21 @@ class MainDemo(Form):
 
 class DemoForm(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Demo Form 1",
-            "Parts": OrderedDict(
-                [
-                    (
-                        "Test Section",
-                        [
-                            StaticText(label="This is the first form in our demo."),
-                            StaticText(label="It is not terribly complicated."),
-                            StaticText(
-                                label="Down here is a button that will let us proceed."
-                            ),
-                            Button(
-                                label="Click Me To Proceed",
-                                name="Continue",
-                                proportion=0,
-                            ),
-                        ],
-                    )
-                ]
+        self.form = dict(Title="Demo Form 1")
+        self.form["Parts"] = parts = OrderedDict()
+
+        # Set up the main section with descriptive text and a button
+        parts["Test Section"] = [
+            StaticText(label="This is the first form in our demo."),
+            StaticText(label="It is not terribly complicated."),
+            StaticText(label="Down here is a button that will let us proceed."),
+            Button(
+                label="Click Me To Proceed",
+                name="Continue",
+                proportion=0,
             ),
-        }
+        ]
+
         Form.__init__(self, parent, **kwargs)
 
     def bind(self):
@@ -101,304 +94,202 @@ class DemoForm(Form):
 
 class DemoFormGrowable(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Demo with Growable Regions",
-            "Parts": OrderedDict(
-                [
-                    (
-                        ("Growable Form", Form.G),
-                        [
-                            StaticText(
-                                label="This Box Sizer will use up available space."
-                            )
-                        ],
-                    )
-                ]
-            ),
-        }
+        self.form = dict(Title="Demo with Growable Regions")
+        self.form["Parts"] = parts = OrderedDict()
+
+        # Create a growable section that will expand to fill available space
+        growable = parts[("Growable Form", Form.G)] = [
+            StaticText(label="This Box Sizer will use up available space.")
+        ]
+
         Form.__init__(self, parent, **kwargs)
 
 
 class DemoNested(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Nexted Containers",
-            "Parts": OrderedDict(
-                [
-                    (
-                        ("Test Nested Growables", Form.G),
-                        [
-                            OrderedDict(
-                                [
-                                    (
-                                        ("Inner Growable", Form.G),
-                                        [
-                                            StaticText(
-                                                label="This Test is a bit less likely to work."
-                                            )
-                                        ],
-                                    )
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    (
-                                        ("Inner Growable 2", Form.G),
-                                        [
-                                            StaticText(
-                                                label="This Test is a bit less likely to work."
-                                            )
-                                        ],
-                                    )
-                                ]
-                            ),
-                        ],
-                    )
-                ]
-            ),
-        }
+        self.form = dict(Title="Nested Containers")
+        self.form["Parts"] = parts = OrderedDict()
+        main_container = parts[("Test Nested Growables", Form.G)] = []
+
+        # Create first inner container with StaticText
+        inner1 = OrderedDict()
+        inner1[("Inner Growable", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        # Create second inner container with StaticText
+        inner2 = OrderedDict()
+        inner2[("Inner Growable 2", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        # Add both inner containers to the main container
+        main_container.append(inner1)
+        main_container.append(inner2)
+
         Form.__init__(self, parent, **kwargs)
 
 
 class DemoNestedHorizontal(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Horizontally Nested",
-            "Parts": OrderedDict(
-                [
-                    (
-                        ("Test Nested Growables", Form.G),
-                        [
-                            (
-                                OrderedDict(
-                                    [
-                                        (
-                                            ("Inner Growable", Form.G),
-                                            [
-                                                StaticText(
-                                                    label="This Test is a bit less likely to work."
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                                OrderedDict(
-                                    [
-                                        (
-                                            ("Inner Growable 2", Form.G),
-                                            [
-                                                StaticText(
-                                                    label="This Test is a bit less likely to work."
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                            )
-                        ],
-                    )
-                ]
-            ),
-        }
+        self.form = dict(Title="Horizontally Nested")
+        self.form["Parts"] = parts = OrderedDict()
+        main_container = parts[("Test Nested Growables", Form.G)] = []
+
+        # Create left container
+        left = OrderedDict()
+        left[("Inner Growable", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        # Create right container
+        right = OrderedDict()
+        right[("Inner Growable 2", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        # Place containers side by side using tuple
+        main_container.append((left, right))
+
         Form.__init__(self, parent, **kwargs)
 
 
 class ComplicatedDemo(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Getting More Complicated",
-            "Parts": OrderedDict(
-                [
-                    (
-                        ("Test Nested Growables", Form.G),
-                        [
-                            (
-                                OrderedDict(
-                                    [
-                                        (
-                                            ("Inner Growable", Form.G),
-                                            [
-                                                StaticText(
-                                                    label="This Test is a bit less likely to work."
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                                OrderedDict(
-                                    [
-                                        (
-                                            ("Inner Growable 2", Form.G),
-                                            [
-                                                StaticText(
-                                                    label="This Test is a bit less likely to work."
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                            ),
-                            [
-                                (
-                                    StaticText(label="Inner 1"),
-                                    StaticText(label="Inner 2"),
-                                    OrderedDict(
-                                        [
-                                            (
-                                                ("Inner Growable 2", Form.G),
-                                                [
-                                                    StaticText(
-                                                        label="This Test is a bit less likely to work."
-                                                    ),
-                                                    (
-                                                        CheckBox(
-                                                            name="Check1",
-                                                            label="A few samples.",
-                                                        ),
-                                                        StaticText(label="Like This."),
-                                                    ),
-                                                ],
-                                            )
-                                        ]
-                                    ),
-                                    StaticText(label="Another Inner"),
-                                )
-                            ],
-                        ],
-                    )
-                ]
+        self.form = dict(Title="Less Complicated")
+        self.form["Parts"] = parts = OrderedDict()
+        main_container = parts[("Test Nested Growables", Form.G)] = []
+
+        # Create top section with side-by-side containers
+        left = OrderedDict()
+        left[("Inner Growable", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        right = OrderedDict()
+        right[("Inner Growable 2", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work.")
+        ]
+
+        # Add horizontal pair to main container
+        main_container.append((left, right))
+
+        # Create inner container for bottom section
+        inner_container = OrderedDict()
+        inner_container[("Inner Growable 2", Form.G)] = [
+            StaticText(label="This Test is a bit less likely to work."),
+            (
+                CheckBox(name="Check1", label="A few samples."),
+                StaticText(label="Like This."),
             ),
-        }
+        ]
+
+        # Create row of elements with the inner container
+        row = (
+            StaticText(label="Inner 1"),
+            StaticText(label="Inner 2"),
+            inner_container,
+            StaticText(label="Another Inner"),
+        )
+
+        # Add row to main container
+        main_container.append([row])
+
         Form.__init__(self, parent, **kwargs)
 
 
 class ComprehensiveDemo(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {
-            "Title": "Comprehensively Complicated",
-            "Parts": OrderedDict(
-                [
-                    (
-                        "Lots Of Types of Elements",
-                        [
-                            # These first several are stand alone.
-                            FontPicker(name="FontPicker"),
-                            StaticText(label="We've seen these.  This one is unnamed."),
-                            CheckBox(
-                                name="Check1",
-                                label="Checkboxes are fun.  This one "
-                                      "controls the input below it.",
-                            ),
-                            TextCtrl(name="Input1"),
-                            # Then several in a row
-                            (
-                                StaticText(label="Passwords can be accomodated."),
-                                PassCtrl(name="Pass1"),
-                            ),
-                            Button(name="Button1", label="This is just a button."),
-                            TreeCtrl(
-                                name="Tree1", proportion=1
-                            ),  # todo tree needs populated.
-                            # Grids take place here.
-                            [
-                                (
-                                    ComboBox(name="Combo1", choices=["1", "2", "3"]),
-                                    FloatSpin(
-                                        name="FloatSpin1",
-                                        min_val=0,
-                                        max_val=30,
-                                        digits=2,
-                                        increment=0.1,
-                                        size=(30, -1),
-                                        flags=wx.EXPAND | wx.ALL,
-                                    ),
-                                    StaticText(label="Ip Addresses are fairly common."),
-                                    IpAddrCtrl(name="IpAddresses"),
-                                ),
-                                (
-                                    RadioButton(name="R1", label="Radios"),
-                                    RadioButton(name="R2", label="can be linked"),
-                                    RadioButton(
-                                        name="R3", label="Or", style=wx.RB_GROUP
-                                    ),
-                                    RadioButton(name="R4", label="Disconnected"),
-                                ),
-                            ],
-                        ],
-                    ),
-                    (
-                        ("Another Container - With Nesting (Take Care).", Form.G),
-                        [
-                            # Are you paying close attention here?  We're nesting OrderedDict's
-                            # in tuple's to get side-by-side BoxSizers
-                            (
-                                OrderedDict(
-                                    [
-                                        (
-                                            "Inner Container 1",
-                                            [
-                                                (
-                                                    StaticText(
-                                                        label="Colors Are Good."
-                                                    ),
-                                                    ColorPicker(name="Color1"),
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                                OrderedDict(
-                                    [("Inner Contaner 2", [Slider(name="Slider1")])]
-                                ),
-                                OrderedDict(
-                                    [
-                                        (
-                                            "Inner Contaner 3",
-                                            [
-                                                Slider(
-                                                    name="Slider2",
-                                                    minValue=1,
-                                                    maxValue=100,
-                                                    style=wx.SL_LABELS,
-                                                )
-                                            ],
-                                        )
-                                    ]
-                                ),
-                            ),
-                            # Which we're going to place above another container.
-                            OrderedDict(
-                                [
-                                    (
-                                        (
-                                            "This is getting kind of deeply nested.",
-                                            Form.G,
-                                        ),
-                                        [
-                                            OrderedDict(
-                                                [
-                                                    (
-                                                        (
-                                                            "But we're showing just how intricate",
-                                                            Form.G,
-                                                        ),
-                                                        [
-                                                            StaticText(
-                                                                label="your forms can be."
-                                                            )
-                                                        ],
-                                                    )
-                                                ]
-                                            )
-                                        ],
-                                    )
-                                ]
-                            ),
-                        ],
-                    ),
-                ]
+        self.form = dict(Title="All Controls Demo")
+        self.form["Parts"] = parts = OrderedDict()
+
+        # First section with basic controls
+        basic_controls = parts["Controls Section"] = [
+            # Basic standalone controls
+            FontPicker(name="FontPicker"),
+            StaticText(label="We've seen these. This one is unnamed."),
+            CheckBox(
+                name="Check1",
+                label="Checkboxes are fun. This one controls the input below it.",
             ),
-        }
+            TextCtrl(name="Input1"),
+            # Row of password controls
+            (
+                StaticText(label="Passwords can be accommodated."),
+                PassCtrl(name="Pass1"),
+            ),
+            Button(name="Button1", label="This is just a button."),
+            TreeCtrl(name="Tree1", proportion=1),  # todo tree needs populated.
+            # Grid layout
+            [
+                # First row of grid
+                (
+                    ComboBox(name="Combo1", choices=["1", "2", "3"]),
+                    FloatSpin(
+                        name="FloatSpin1",
+                        min_val=0,
+                        max_val=30,
+                        digits=2,
+                        increment=0.1,
+                        size=(30, -1),
+                        flags=wx.EXPAND | wx.ALL,
+                    ),
+                    StaticText(label="IP Addresses are fairly common."),
+                    IpAddrCtrl(name="IpAddresses"),
+                ),
+                # Second row of grid
+                (
+                    RadioButton(name="R1", label="Radios"),
+                    RadioButton(name="R2", label="can be linked"),
+                    RadioButton(name="R3", label="Or", style=wx.RB_GROUP),
+                    RadioButton(name="R4", label="Disconnected"),
+                ),
+            ],
+        ]
+
+        # Second section with nested containers
+        nested_section = parts[("Advanced Layout", Form.G)] = []
+
+        # Three containers side by side
+        container1 = OrderedDict()
+        container1["Inner Container 1"] = [
+            (
+                StaticText(label="Colors Are Good."),
+                ColorPicker(name="Color1"),
+            )
+        ]
+
+        container2 = OrderedDict()
+        container2["Inner Container 2"] = [Slider(name="Slider1")]
+
+        container3 = OrderedDict()
+        container3["Inner Container 3"] = [
+            Slider(
+                name="Slider2",
+                minValue=1,
+                maxValue=100,
+                style=wx.SL_LABELS,
+            )
+        ]
+
+        # Add horizontal row of containers
+        nested_section.append((container1, container2, container3))
+
+        # Deep nested container
+        outer_container = OrderedDict()
+        inner_container = OrderedDict()
+
+        inner_container[("But we're showing just how intricate", Form.G)] = [
+            StaticText(label="your forms can be.")
+        ]
+
+        outer_container[("This is getting kind of deeply nested.", Form.G)] = [
+            inner_container
+        ]
+
+        # Add the deeply nested container
+        nested_section.append(outer_container)
+
         super(ComprehensiveDemo, self).__init__(parent, **kwargs)
 
     def bind(self):
@@ -445,33 +336,45 @@ class AlternateDeclaration(Form):
 
 class GridDemos(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {"Title": "Nested Grids"}
-        parts = self.form["Parts"] = OrderedDict()
-        for row in range(10):
-            row_list = parts["Row %d" % row] = list()
-            cols = list()
-            for col in range(10):
-                inner = OrderedDict()
-                innermost = inner["Col %d" % col] = list()
-                innermost.append(StaticText(label="%d x %d" % (row, col)))
-                cols.append(inner)
-            row_list.append(tuple(cols))
+        self.form = dict(Title="Grid Layout Demo")
+        self.form["Parts"] = parts = OrderedDict()
+
+        # Create a smaller, more manageable grid (5x5 instead of 10x10)
+        for row in range(5):
+            row_section = parts[f"Row {row}"] = []
+            col_containers = []
+
+            # Create columns for this row
+            for col in range(5):
+                col_container = OrderedDict()
+                col_content = col_container[f"Col {col}"] = []
+                col_content.append(StaticText(label=f"{row} x {col}"))
+                col_containers.append(col_container)
+
+            # Add all columns as a tuple to create a row
+            row_section.append(tuple(col_containers))
+
         super(GridDemos, self).__init__(parent, **kwargs)
 
 
 class DemoLeftStacked(Form):
     def __init__(self, parent, **kwargs):
-        self.form = {"Title": "Left Stacked Demo"}
-        parts = self.form["Parts"] = OrderedDict()
-        outermost = parts[("Outermost", Form.G)] = list()
-        left, right = OrderedDict(), OrderedDict()
-        outermost.append(Row((left, right), rowGrowable=True, proportion=1))
-        l1 = left[("Left Top", Form.G)] = list()
-        l1.append(StaticText(label="Left Top Inner"))
-        l2 = left[("Left Bottom", Form.G)] = list()
-        l2.append(StaticText(label="Left Bottom Inner"))
-        r1 = right[("Right", Form.G)] = list()
-        r1.append(
+        self.form = dict(Title="Left Stacked Layout")
+        self.form["Parts"] = parts = OrderedDict()
+        main_container = parts[("Main Layout", Form.G)] = []
+
+        # Create left section with top and bottom parts
+        left_section = OrderedDict()
+        left_top = left_section[("Left Top", Form.G)] = []
+        left_top.append(StaticText(label="Left Top Inner"))
+
+        left_bottom = left_section[("Left Bottom", Form.G)] = []
+        left_bottom.append(StaticText(label="Left Bottom Inner"))
+
+        # Create right section
+        right_section = OrderedDict()
+        right_content = right_section[("Right Panel", Form.G)] = []
+        right_content.append(
             TextCtrl(
                 name="Text",
                 style=wx.TE_MULTILINE,
@@ -480,18 +383,31 @@ class DemoLeftStacked(Form):
                 proportion=1,
             )
         )
+
+        # Add left and right sections as a row
+        main_container.append(
+            Row((left_section, right_section), rowGrowable=True, proportion=1)
+        )
+
         super(DemoLeftStacked, self).__init__(parent, **kwargs)
 
 
 class NonDialog(Form):
     def __init__(self, parent, **kwargs):
         self.form = {}
-        parts = self.form["Parts"] = OrderedDict()
-        main = parts[("Main", Form.G | Form.NC)] = list()
-        main.append(StaticText(label="This is where you would create your app."))
-        inner = OrderedDict()
-        main.append(inner)
-        inner[("Sub Region 1", Form.G)] = list()
+        self.form["Parts"] = parts = OrderedDict()
+
+        # Main application area
+        main_area = parts[("Main Application Area", Form.G | Form.NC)] = []
+        main_area.append(StaticText(label="This is where you would create your app."))
+
+        # Create a sub-region
+        sub_region = OrderedDict()
+        sub_region[("Sub Region 1", Form.G)] = []
+
+        # Add sub-region to main area
+        main_area.append(sub_region)
+
         super(NonDialog, self).__init__(parent, **kwargs)
 
 
@@ -521,6 +437,7 @@ class AddButtons(Form):
     to bind each button to a corresponding `on<Name>` method
     on your form. If you want button events, add these methods.
     """
+
     def __init__(self, parent, **kwargs):
         print(wx.ID_YES, wx.ID_OK)
         self.form = dict(

@@ -12,16 +12,16 @@ from .Controls import CheckBox, RadioButton, Row, StaticText
 
 class FormDialog(wx.Dialog):
     def __init__(
-            self,
-            parent,
-            panel=None,
-            title="Unnamed Dialog",
-            modal=False,
-            sizes=(-1, -1),
-            offset=None,
-            gap=3,
-            position=None,
-            **kwargs
+        self,
+        parent,
+        panel=None,
+        title="Unnamed Dialog",
+        modal=False,
+        sizes=(-1, -1),
+        offset=None,
+        gap=3,
+        position=None,
+        **kwargs,
     ):
         wx.Dialog.__init__(
             self, parent, -1, title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
@@ -45,11 +45,15 @@ class FormDialog(wx.Dialog):
             if "AddButtons" in self.panel.form:
                 self.bs = wx.GridBagSizer()
                 self.bs.AddGrowableCol(0)
-                for col, (label, wx_id) in enumerate(self.panel.form["AddButtons"].items(), start=1):
+                for col, (label, wx_id) in enumerate(
+                    self.panel.form["AddButtons"].items(), start=1
+                ):
                     button = wx.Button(self, label=label, id=wx_id)
                     self.bs.Add(button, (0, col))
                     if hasattr(self.panel, f"on{label}"):
-                        self.Bind(wx.EVT_BUTTON, getattr(self.panel, f"on{label}"), id=wx_id)
+                        self.Bind(
+                            wx.EVT_BUTTON, getattr(self.panel, f"on{label}"), id=wx_id
+                        )
             else:
                 self.bs = self.CreateButtonSizer(
                     self.panel.form.get("Buttons", wx.OK | wx.CANCEL)
@@ -97,7 +101,7 @@ class Form(wx.Panel):
     VC = VERTICAL_ENTER = wx.EXPAND | wx.ALL
 
     def __init__(
-            self, parent=None, id=-1, gap=3, sizes=(-1, -1), *args
+        self, parent=None, id=-1, gap=3, sizes=(-1, -1), *args
     ):  # @ReservedAssignment
         wx.Panel.__init__(self, parent, id)
 
@@ -306,15 +310,15 @@ class Form(wx.Panel):
                         flag=wx.ALIGN_CENTER_VERTICAL | flags,
                     )
                 if (
-                        rowGrowable
-                        and row < sizer.GetRows()
-                        and not sizer.IsRowGrowable(row)
+                    rowGrowable
+                    and row < sizer.GetRows()
+                    and not sizer.IsRowGrowable(row)
                 ):
                     sizer.AddGrowableRow(row)
                 if (
-                        colGrowable
-                        and col < sizer.GetCols()
-                        and not sizer.IsColGrowable(col)
+                    colGrowable
+                    and col < sizer.GetCols()
+                    and not sizer.IsColGrowable(col)
                 ):
                     sizer.AddGrowableCol(col)
         return sizer

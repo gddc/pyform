@@ -197,9 +197,9 @@ class DoLaterTimer(wx.Timer):
         wx.Timer.__init__(self)
         for timer in self.active_timers:
             if (
-                    (timer.callable == callable)
-                    and (timer.args == args)
-                    and (timer.kw_args == kw_args)
+                (timer.callable == callable)
+                and (timer.args == args)
+                and (timer.kw_args == kw_args)
             ):
                 timer.Start(interval, True)
                 return

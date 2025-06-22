@@ -11,7 +11,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="ghostdev.pyform",
-    version="1.0.5",
+    version="1.0.6",
     package_dir={"": "src"},
     packages=find_packages("src"),
 )
