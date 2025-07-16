@@ -113,16 +113,12 @@ class Form(wx.Panel):
         if hasattr(self, "form"):
             # Before building verify that several required sections exist in the form
             # definition object.
-            if "Defaults" not in self.form:
-                self.form["Defaults"] = {}
-            if "Disabled" not in self.form:
-                self.form["Disabled"] = []
-            if "Validators" not in self.form:
-                self.form["Validators"] = {}
-            if "Options" not in self.form:
-                self.form["Options"] = {}
+            self.form["Defaults"] = self.form.get("Defaults", {})
+            self.form["Validators"] = self.form.get("Validators", {})
+            self.form["Options"] = self.form.get("Options", {})
+            self.form["Disabled"] = self.form.get("Disabled", [])
 
-            # Allow sub classes to add their own values or defaults.
+            # Allow subclasses to add their own values or defaults.
             self.loadDefaults()
             self.loadOptions()
             self.build()
@@ -163,19 +159,19 @@ class Form(wx.Panel):
 
     m2h = MachineToHuman
 
-    def Bind(self, evtType, evtFunc, evtSrc, call=False, *args, **kwargs):
+    def Bind(self, evtType, evtFunc, evtSrc=None, call=False, *args, **kwargs):
         """
         I rewrote Bind a little bit to simplify binding events using the names
         that you assign to individual elements.  The call signature is the
         same, and it only triggers when you pass the *wrong* type argument
         as the event source, so it shouldn't affect existing Bind calls.
         """
-        if isinstance(evtSrc, str):
-            evtSrc = self.elements[evtSrc]
-        #    if isinstance(evtType, wx.CommandEvent):
-        evtSrc.Bind(evtType, evtFunc)
-        #    else:
-        #      super(Form, self).Bind(evtType, evtFunc, evtSrc, *args, **kwargs)
+        if evtSrc:
+            if isinstance(evtSrc, str):
+                evtSrc = self.elements[evtSrc]
+            evtSrc.Bind(evtType, evtFunc)
+        else:
+            super().Bind(evtType, evtFunc)
         if call:
             evtFunc()
 

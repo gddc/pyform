@@ -568,7 +568,7 @@ class IpAddrCtrl(wxPlaceHolder, IpAddrCtrl_):
 
 class CheckTreeCtrl(wxPlaceHolder, CustomTreeCtrl_):
     def make(self, parent):
-        CustomTreeCtrl_.__init__(parent, **self.kwargs)
+        CustomTreeCtrl_.__init__(self, parent, **self.kwargs)
         return self
 
     def SetOptions(self, options):
