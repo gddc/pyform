@@ -6,6 +6,7 @@ from traceback import print_exc
 
 import wx
 from wx import EVT_MENU
+from wx.lib.scrolledpanel import ScrolledPanel
 
 from .Controls import CheckBox, RadioButton, Row, StaticText
 
@@ -98,6 +99,7 @@ class Form(wx.Panel):
     G = GROWABLE = 1
     NC = NO_CONTAINER = 2
     R = RIGHT_ALIGN = 4
+    S = SCROLLED = 8
     VC = VERTICAL_ENTER = wx.EXPAND | wx.ALL
 
     def __init__(
@@ -208,10 +210,10 @@ class Form(wx.Panel):
                     EVT_MENU(self.elements[name], key, func)
                 self.elements[name].SetAcceleratorTable(wx.AcceleratorTable(at))
 
-    def parseContainer(self, container, outerSizer, pos=None, span=None):
+    def parseContainer(self, container, outerSizer, parent=None, pos=None, span=None):
         sectionSizer = wx.BoxSizer(wx.VERTICAL)
         for section in container.items():
-            region, proportion = self.parseSection(section)
+            region, proportion = self.parseSection(section, parent)
             sectionSizer.Add(region, proportion, flag=Form.VC, border=self.gap)
         if isinstance(outerSizer, wx.GridBagSizer):
             outerSizer.Add(
@@ -224,7 +226,7 @@ class Form(wx.Panel):
         else:
             outerSizer.Add(sectionSizer, 1, flag=Form.VC, border=self.gap)
 
-    def parseSection(self, section):
+    def parseSection(self, section, parent=None):
         container, blocks = section
         if isinstance(container, tuple):
             display, flags = container
@@ -233,17 +235,26 @@ class Form(wx.Panel):
             flags = Form.D
             display = container
         self.flags = flags
-        sizerProportion = 1 if flags & Form.G else 0
+        sizer_proportion = 1 if flags & Form.G else 0
         if flags & Form.NC:
-            sectionSizer = wx.BoxSizer(wx.VERTICAL)
+            section_sizer = wx.BoxSizer(wx.VERTICAL)
         else:
-            box = wx.StaticBox(self, -1, display)
-            sectionSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+            box = wx.StaticBox(parent or self, -1, display)
+            section_sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        if flags & Form.S:
+            parent = ScrolledPanel(self, -1)
+            actual_sizer = section_sizer
+            section_sizer.Add(parent, 1, flag=Form.VC, border=self.gap)
+            section_sizer = wx.BoxSizer(wx.VERTICAL)
         for block in blocks:
-            self.parseBlock(block, sectionSizer)
-        return sectionSizer, sizerProportion
+            self.parseBlock(block, section_sizer, parent)
+        if flags & Form.S:
+            parent.SetupScrolling()
+            parent.SetSizer(section_sizer)
+            section_sizer = actual_sizer
+        return section_sizer, sizer_proportion
 
-    def parseBlock(self, block, sectionSizer):
+    def parseBlock(self, block, sectionSizer, parent=None):
         """
         The form structure is a list of rows (blocks) in the form.  Each row
         consists of a single element, a row of elements, or a sub-grid of
@@ -252,18 +263,18 @@ class Form(wx.Panel):
         """
         proportion = 0
         if isinstance(block, OrderedDict):
-            return self.parseContainer(block, sectionSizer)
+            return self.parseContainer(block, sectionSizer, parent)
         if isinstance(block, list):
-            item = self.makeGrid(block)
+            item = self.makeGrid(block, parent)
         elif isinstance(block, (tuple, Row)):
             proportion = getattr(block, "proportion", proportion)
-            item = self.makeRow(block)
+            item = self.makeRow(block, parent)
         else:
             proportion = block.proportion
-            item = self.makeWidget(block)
+            item = self.makeWidget(block, parent)
         sectionSizer.Add(item, proportion, flag=Form.VC, border=self.gap)
 
-    def makeRow(self, fields):
+    def makeRow(self, fields, parent=None):
         """
         In the form structure a tuple signifies a row of elements.  These items
         will be arranged horizontally without dependency on other rows.  Each
@@ -272,10 +283,10 @@ class Form(wx.Panel):
         """
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         for field in fields:
-            self.parseBlock(field, sizer)
+            self.parseBlock(field, sizer, parent)
         return sizer
 
-    def makeGrid(self, rows):
+    def makeGrid(self, rows, parent=None):
         """
         In the form structure a list signifies a grid of elements (equal width
         columns, rows with similar numbers of elements, etc).
@@ -295,9 +306,9 @@ class Form(wx.Panel):
                     getattr(field, "colpos", col) or col,
                 )
                 if isinstance(field, OrderedDict):
-                    self.parseContainer(field, sizer, pos, span)
+                    self.parseContainer(field, sizer, parent, pos, span)
                 else:
-                    element = self.makeWidget(field)
+                    element = self.makeWidget(field, parent)
                     sizer.Add(
                         element,
                         pos,
@@ -319,7 +330,7 @@ class Form(wx.Panel):
                     sizer.AddGrowableCol(col)
         return sizer
 
-    def makeWidget(self, declarator):
+    def makeWidget(self, declarator, parent=None):
         """
         This function actually creates the widgets that make up the form.
         Each element should provide a `make` method which takes as an argument
@@ -334,7 +345,7 @@ class Form(wx.Panel):
 
         # Attach the elements container to the declarator.
         declarator._elements = self.elements
-        element = declarator.make(self)
+        element = declarator.make(parent or self)
         if declarator.name:
             self.elements[declarator.name] = declarator
             # Disable if requested.
